@@ -1,0 +1,52 @@
+---
+description: Quiz gameplay — two attempts per question before level fails (not Squad Predictor)
+alwaysApply: true
+---
+
+# Quiz — two attempts per question (FROZEN BEHAVIOUR)
+
+When editing quiz **gameplay / answer-handling logic** (not question content):
+
+## Required behaviour
+
+1. **Two tries per question** — On the first wrong answer, the player stays on the **same question** and gets another chance. Toast: `Wrong answer! One more try.`
+2. **Level fails on the second wrong answer** — Only after the **second** wrong attempt on that question should **Game Over / level restart** trigger.
+3. **Reset attempts on new question** — Wrong-attempt counter resets when advancing to the next question or restarting the level.
+
+## Scope — all quiz categories EXCEPT Squad Predictor
+
+Applies to every quiz game page, including:
+
+- `src/pages/Game.tsx` (world-cup, guess-who, guess-scoreline, missing-player questions, country-history, world-cup-bingo, etc.)
+- `src/pages/PlayerGame.tsx`
+- `src/pages/WinnersGame.tsx`
+- `src/pages/StadiumsGame.tsx`
+- `src/pages/ScorelineGame.tsx`
+- `src/pages/ManagersGame.tsx`
+- `src/pages/MissingPlayerGame.tsx`
+- `src/pages/GuessTheScorerGame.tsx`
+
+**Never change this for 2026 Squad Predictor** — `src/pages/SquadPredictor*.tsx`, `SquadTab.tsx`, `SquadPredictorHubContext.tsx`, and related squad-predictor routes are **out of scope**.
+
+## Source of truth
+
+- Shared constant: `QUIZ_ATTEMPTS_PER_QUESTION = 2` in `src/lib/quizLevelRules.ts`
+- Helper: `shouldFailQuizLevelAfterWrong(wrongAttempts)`
+
+Use these helpers when adding or fixing wrong-answer handling — do not hard-code a single-strike fail.
+
+## Never do
+
+- Revert to **one-strike** level failure on first wrong answer
+- Change **questions, answers, hints, or option text**
+- Touch **2026 Squad Predictor** logic, data, or UI
+- Refactor unrelated gameplay (scoring, hints, timers, completion rules) unless explicitly asked
+
+## Definition of done
+
+A quiz gameplay edit is correct only if:
+
+- [ ] First wrong answer retries the same question (no game over)
+- [ ] Second wrong answer on that question shows game over / restart
+- [ ] Squad Predictor untouched
+- [ ] No question/answer data changed

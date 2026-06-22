@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 160" fill="none">
+  <rect width="120" height="160" rx="8" fill="hsl(220 14% 18%)"/>
+  <circle cx="60" cy="52" r="22" fill="hsl(220 10% 38%)"/>
+  <ellipse cx="60" cy="118" rx="36" ry="44" fill="hsl(220 10% 38%)"/>
+  <text x="60" y="152" text-anchor="middle" fill="hsl(220 10% 55%)" font-family="system-ui,sans-serif" font-size="8">No CC photo yet</text>
+</svg>

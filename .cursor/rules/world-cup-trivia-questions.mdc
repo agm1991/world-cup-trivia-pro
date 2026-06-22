@@ -1,0 +1,38 @@
+---
+description: World Cup category — country diversity, short copy, scope for levels 10–50
+globs: src/data/worldCup*.ts
+alwaysApply: false
+---
+
+# World Cup category — diversity and question text
+
+When adding, auditing, or rewriting **World Cup category** question copy in matched files:
+
+## Country diversity (Levels 10–17 and 18–50)
+
+1. **Mix nations** — Include a broad spread (e.g. African, Asian, Americas, and European sides beyond the usual finalists). Avoid over-focusing on the same few countries.
+2. **Consecutive cap** — Do not place more than **two** questions in a row whose **primary** subject is the same country (the nation the player/manager/stadium fact is mainly about).
+3. **Audits** — When reviewing levels 10–17, replace blocks that read as Brazil/Germany/Argentina-only with varied nations where it improves the mix without weakening difficulty.
+
+## Writing rules
+
+1. **Shorten and simplify** — Remove filler: "roughly," "iconic," long scene-setting. Ask the fact in few words.
+2. **Be specific** — Prefer exact minute or exact score when relevant; use direct prompts: "What was the final score?", "Who was the manager?", "In what minute did X score?"
+3. **Focus** — Who, when, where, what minute, what score. No decorative prose.
+
+**Example:** `In what minute did Dennis Bergkamp score the winner for the Netherlands against Argentina at France ’98?`
+
+## Facts and uniqueness
+
+- **Verify** every correct answer against reliable sources.
+- **Avoid duplicate prompts** — New questions must not repeat the same fact as existing items in the same pool (watch overlap with levels 1–16 when editing 10–17).
+
+## Scope
+
+- **Levels 10–17** — Apply diversity audits and copy rules when maintaining this band.
+- **Levels 18–50** — Apply these rules to every new or revised World Cup question.
+- **Do not change** UI, navigation, routing, or non–World Cup categories as part of this mandate.
+
+## Future prompts
+
+If the user asks for new World Cup questions or an audit, **rewrite copy to comply** with the rules above before or as part of delivery.

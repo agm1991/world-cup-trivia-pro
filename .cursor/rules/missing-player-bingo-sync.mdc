@@ -1,0 +1,53 @@
+---
+description: Missing Player edits must sync World Cup Bingo missing-player pitch layouts in the same change — never leave Bingo behind
+globs:
+  - src/data/mediumLineups/**
+  - src/data/missingPlayerLineupLevels*.frozen.ts
+  - src/pages/MissingPlayerGame.tsx
+  - src/data/bingoMissingPlayerLineup*.ts
+  - src/data/bingoMpLineupCatalog.ts
+  - scripts/generate-bingo-xi-supplements.mjs
+alwaysApply: true
+---
+
+# Missing Player ↔ World Cup Bingo sync (CRITICAL)
+
+When the user asks to fix **Missing Player** lineups (coords, starters, formations, Wikipedia fact-check):
+
+## Always do in the SAME edit session
+
+1. Fix Missing Player (frozen level file, `mediumLineups/`, or `MissingPlayerGame.tsx` for levels 1–6).
+2. **Immediately sync World Cup Bingo** for every **missing-player pitch question** that uses the same fixture — same starters, same `x`/`y`, same `?` role band.
+3. **Do not** give the user a separate Bingo to-do list. **Do not** claim Bingo is synced unless the data files were actually updated in that session.
+4. **Do not** guess Bingo “Level X Question Y” from scripts — those numbers drift when the question pool changes. Never cite level/question positions unless verified in the running app or an audit the user requested.
+
+## Scope — Bingo only
+
+- **Only** World Cup Bingo rows with `sourceCategory: 'missing-player'` that show the **green pitch + XI + blank**.
+- **Never** touch other Bingo types (trivia, guess-who, scoreline, country-history, etc.).
+
+## How to sync (by Missing Player level)
+
+### Levels 7–18 (frozen / `mediumLineups/`)
+
+- Bingo reads the **same** lineup defs via `bingoMpLineupCatalog.ts` when `BINGO_MP_LINEUP_OVERRIDES` maps `mp-*` → `level-N-match-M`.
+- After changing a frozen level: ensure affected `mp-*` ids in `scripts/generate-bingo-xi-supplements.mjs` point at the right `level-*-match-*`, then run:
+  ```bash
+  node scripts/generate-bingo-xi-supplements.mjs
+  ```
+- If a Bingo prompt has no override but matches the fixture, confirm auto-match in catalog still resolves to the updated def.
+
+### Levels 1–6 (`MissingPlayerGame.tsx` / `missingPlayerLineupLevels1to6.frozen.ts`)
+
+- Bingo does **not** auto-read `MissingPlayerGame.tsx`.
+- For each edited fixture, update the matching row in **`bingoMissingPlayerLineupVerifiedFixtures.ts`** or **`bingoMissingPlayerLineupSupplements.ts`** (same coords and starters).
+- Wire the `mp-*` id in `scripts/generate-bingo-xi-supplements.mjs` if missing, then regenerate overrides.
+
+## Definition of done
+
+A Missing Player task is **not complete** until:
+
+- [ ] Missing Player lineup saved (and frozen/rehashed if applicable)
+- [ ] All Bingo missing-player pitch rows for that fixture updated or confirmed shared via catalog
+- [ ] `npm run validate:lineups` passes
+- [ ] User was **not** asked to fix Bingo separately

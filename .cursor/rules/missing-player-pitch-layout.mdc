@@ -1,0 +1,59 @@
+---
+description: Missing Player pitch layout — Wikipedia starters, coordinate spacing, winger/CM rules (level 7+)
+globs:
+  - src/data/missingPlayerLineupLevels7to17.ts
+  - src/data/mediumLineups/**
+  - src/data/bingoMissingPlayerLineup*.ts
+alwaysApply: true
+---
+
+# Missing Player pitch layout (level 7+)
+
+**Always copy the Wikipedia match-page formation diagram** for that exact fixture. Named (non-`?`) slots must be real starters from that diagram — not subs.
+
+Pitch coords: **y:12 = attack (ST)**, **y:50 = halfway line**, **y:90 = GK**. Lower y = further forward.
+
+## Coordinate reference
+
+```
+gk: (50, 90)
+rb: (84, 72) | rcb: (66, 76) | lcb: (34, 76) | lb: (16, 72)
+cm band (ON halfway, central corridor only): lcm (38, 50) | cm (50, 50) | rcm (62, 50)
+three-cm flat (4-3-3 only): (32, 50) | (50, 50) | (68, 50)
+dm (ONLY role behind halfway): (38, 60) & (62, 60) or lone (50, 64)
+cam: (50, 36)
+lm / rm (4-4-2 wide mids — touchline, ahead of CM band): (22, 32) / (78, 32)
+cam (4-4-1-1 / 4-5-1): (50, 26)–(50, 28)
+lw / rw (high forwards): (22, 24) / (78, 24)
+lw / rw (narrow 4-3-3): (32, 24) / (68, 24)
+st / cf: (50, 12) | lst: (38, 12) | rst: (62, 12)
+```
+
+## Rules
+
+0. **World Cup Bingo sync (CRITICAL)** — Every Missing Player lineup edit must update Bingo missing-player pitch rows for the same fixture **in the same session**. See `.cursor/rules/missing-player-bingo-sync.mdc`. Never finish Missing Player work and leave Bingo for later. Never guess Bingo level/question numbers.
+1. **CMs on the halfway line (`y: 50`)** in the **central corridor** (`x: 38–62`). Never `y: 56+` unless DM (`y: 60+`).
+2. **Wide mids / wingers stay wide and ahead of CMs** — `x: 22 / 78`, **`y: 30–32`** in 4-4-2 (not `y: 38`, which sits too close to CM `y: 50`). High wingers in 4-3-3 use `y: 24`.
+3. **Separate bands vertically:** DM `y: 60+` → CM `y: 50` → wide mid `y: 32` → CAM `y: 26` → ST `y: 12`.
+4. **No overlaps** — minimum ~16px between markers; keep ≥16px horizontal gap between touchline winger (`x: 22`) and nearest CM (`x: 38`).
+4. **Factual starters** — verify every named slot against Wikipedia; fix wrong names and quiz options (e.g. Gilardino not Toni if Toni isn’t in the diagram).
+5. **Levels 1–30 frozen** — never edit frozen level files through `missingPlayerLineupLevels30.frozen.ts` unless user explicitly re-locks.
+
+## Levels 31+ workflow (active editing)
+
+When building or fixing **level 31 onward** in `src/data/mediumLineups/level*.ts`:
+
+1. **Wikipedia starters only** — every named slot must be a real starter for that exact fixture (not subs).
+2. **Exactly 3 blanks per match** — `targetPlayers` length 3; options use ` · ` between three names.
+3. **Copy frozen template coords** when the same fixture exists in levels 1–24 (flat bands, no overlaps).
+4. **Spread CMs** — use `(32, 50)` / `(68, 50)` or `(38, 50)` / `(62, 50)`; never stack two players on the same `x` unless lone ST.
+5. **Attack bands** — ST `(50, 12)` or pair `(38, 12)` / `(62, 12)`; wingers `(22, 24)` / `(78, 24)`; CAM `(38, 36)` / `(62, 36)` for 4-2-2-2.
+6. **Defence** — flat back four: CBs `y:76`, full-backs `y:72` at `x:16/84`.
+7. **Light edits first** — fix factual names + spacing; do not rewrite whole levels unless asked.
+8. **Freeze when user says save** — run `node scripts/freeze-missing-player-level-N.mjs --confirm`, stub `levelN.ts`, wire `missingPlayerLineupMedium10to20.ts`, add validate script, update frozen rules.
+9. **Bingo sync** — update matching Bingo pitch overrides in the same session (see `missing-player-bingo-sync.mdc`).
+
+## Examples (2006 R16 — copy Wikipedia diagrams)
+
+- **Spain 4-3-3 vs France:** Fàbregas + Alonso + Xavi on halfway `(32/50/68, 50)`; Villa + Torres high AM `(22/78, 24)`; **Raúl CF `(50, 12)`**. Senna was a sub.
+- **Italy 4-3-3 vs Australia:** Cannavaro CB; Grosso LB (missing); Gattuso + Pirlo + Perrotta on halfway `(38/50/62, 50)`; Del Piero narrow LW `(32, 24)`; **Toni CF `(50, 12)`**; Totti narrow RW (missing target). Gilardino was a sub.

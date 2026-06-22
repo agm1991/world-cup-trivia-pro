@@ -1,0 +1,579 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Championship Design System - World Cup Quiz */
+
+@layer base {
+  :root {
+    /* Midnight Blue Dark Theme - Premium Sports Interface */
+    --background: 222 47% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 12%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 10%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Gold Trophy Colors */
+    --primary: 45 93% 47%;
+    --primary-foreground: 222 47% 8%;
+    --primary-glow: 45 100% 60%;
+
+    /* Cyan Accent */
+    --secondary: 190 95% 45%;
+    --secondary-foreground: 222 47% 8%;
+
+    /* Dark Muted */
+    --muted: 222 30% 18%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 190 95% 45%;
+    --accent-foreground: 222 47% 8%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 222 30% 20%;
+    --input: 222 30% 18%;
+    --ring: 45 93% 47%;
+
+    --radius: 1rem;
+
+    /* Premium Dark Gradients */
+    --gradient-gold: linear-gradient(135deg, hsl(45 93% 47%), hsl(45 100% 60%));
+    --gradient-field: linear-gradient(180deg, hsl(222 47% 12%), hsl(222 47% 6%));
+    --gradient-hero: linear-gradient(135deg, hsl(222 47% 6%), hsl(222 47% 3%));
+    --gradient-card: linear-gradient(145deg, hsl(222 47% 14%), hsl(222 47% 10%));
+    --gradient-cyan: linear-gradient(135deg, hsl(190 95% 45%), hsl(200 95% 50%));
+
+    /* Premium Shadows */
+    --shadow-gold: 0 10px 40px hsl(45 93% 47% / 0.25);
+    --shadow-trophy: 0 20px 60px hsl(45 100% 60% / 0.35);
+    --shadow-card: 0 8px 32px hsl(222 47% 3% / 0.5);
+    --shadow-glow: 0 0 30px hsl(190 95% 45% / 0.3);
+
+    /* Smooth Transitions */
+    --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark {
+    --background: 222 47% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 12%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 10%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 45 93% 47%;
+    --primary-foreground: 222 47% 8%;
+
+    --secondary: 190 95% 45%;
+    --secondary-foreground: 222 47% 8%;
+
+    --muted: 222 30% 18%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 190 95% 45%;
+    --accent-foreground: 222 47% 8%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 222 30% 20%;
+    --input: 222 30% 18%;
+    --ring: 45 93% 47%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+
+  #root {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 0.02em;
+  }
+}
+
+/* Premium Dark Theme Animations */
+@layer utilities {
+  .golden-glow {
+    transition: var(--transition-smooth);
+  }
+  
+  .golden-glow:hover {
+    filter: drop-shadow(0 0 20px hsl(45 100% 60%))
+            drop-shadow(0 0 40px hsl(45 100% 60% / 0.5))
+            drop-shadow(0 0 60px hsl(45 100% 60% / 0.3));
+    transform: scale(1.02);
+  }
+
+  .trophy-pulse {
+    animation: trophy-pulse 3s ease-in-out infinite;
+  }
+
+  @keyframes trophy-pulse {
+    0%, 100% {
+      filter: drop-shadow(0 0 10px hsl(45 100% 60% / 0.3));
+    }
+    50% {
+      filter: drop-shadow(0 0 30px hsl(45 100% 60% / 0.5));
+    }
+  }
+
+  /** Tournament tab — World Cup centerpiece: continuous gold shine sweep */
+  .wc-trophy-shine-wrap {
+    position: relative;
+    border-radius: 1rem;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .wc-trophy-shine-wrap::after {
+    content: '';
+    position: absolute;
+    inset: -20%;
+    background: linear-gradient(
+      115deg,
+      transparent 36%,
+      hsl(48 100% 96% / 0.22) 48%,
+      hsl(45 100% 85% / 0.38) 50%,
+      hsl(48 100% 96% / 0.22) 52%,
+      transparent 64%
+    );
+    animation: wc-trophy-shine-sweep 3.2s ease-in-out infinite;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    z-index: 2;
+  }
+
+  @keyframes wc-trophy-shine-sweep {
+    0% {
+      transform: translateX(-35%) rotate(6deg);
+      opacity: 0.65;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(35%) rotate(6deg);
+      opacity: 0.65;
+    }
+  }
+
+  .wc-trophy-radial-glow {
+    position: absolute;
+    inset: -30%;
+    background: radial-gradient(
+      ellipse 65% 55% at 50% 45%,
+      hsl(45 100% 55% / 0.18) 0%,
+      transparent 62%
+    );
+    animation: wc-trophy-glow-breathe 4s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  @keyframes wc-trophy-glow-breathe {
+    0%,
+    100% {
+      opacity: 0.75;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.04);
+    }
+  }
+
+  .cyan-glow {
+    transition: var(--transition-smooth);
+  }
+  
+  .cyan-glow:hover {
+    box-shadow: 0 0 30px hsl(190 95% 45% / 0.4),
+                0 0 60px hsl(190 95% 45% / 0.2);
+  }
+
+  .category-card {
+    transition: var(--transition-smooth);
+    background: linear-gradient(145deg, hsl(222 47% 14%), hsl(222 47% 10%));
+  }
+
+  .category-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 40px hsl(222 47% 3% / 0.6),
+                0 0 20px hsl(45 93% 47% / 0.15);
+    border-color: hsl(45 93% 47% / 0.5);
+  }
+
+  /* Same yellow PLAY pill as World Cup card — use with .category-card .group */
+  .play-button {
+    @apply px-4 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black text-sm rounded-full uppercase tracking-wider shadow-lg shadow-amber-500/30 transition-transform;
+  }
+
+  .group:hover .play-button {
+    @apply scale-105;
+  }
+
+  .dark-card {
+    background: linear-gradient(145deg, hsl(222 47% 14%), hsl(222 47% 10%));
+    border: 1px solid hsl(222 30% 22%);
+  }
+
+  .premium-button {
+    background: linear-gradient(135deg, hsl(45 93% 47%), hsl(45 100% 55%));
+    color: hsl(222 47% 8%);
+    font-weight: 600;
+    transition: var(--transition-smooth);
+  }
+
+  .premium-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px hsl(45 93% 47% / 0.4);
+  }
+
+  /* Stadium Cinematic Effects */
+  .stadium-lights {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .stadium-lights::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: 
+      radial-gradient(ellipse 600px 300px at 20% 10%, hsl(45 100% 60% / 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse 400px 200px at 80% 5%, hsl(45 100% 60% / 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse 300px 150px at 50% 0%, hsl(45 100% 60% / 0.1) 0%, transparent 40%);
+    animation: stadium-sweep 8s ease-in-out infinite;
+  }
+
+  @keyframes stadium-sweep {
+    0%, 100% {
+      transform: translateX(-5%) rotate(0deg);
+      opacity: 0.8;
+    }
+    50% {
+      transform: translateX(5%) rotate(1deg);
+      opacity: 1;
+    }
+  }
+
+  .confetti-particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    opacity: 0;
+    animation: confetti-fall linear infinite;
+  }
+
+  @keyframes confetti-fall {
+    0% {
+      transform: translateY(-100vh) rotate(0deg);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.8;
+    }
+    90% {
+      opacity: 0.6;
+    }
+    100% {
+      transform: translateY(100vh) rotate(720deg);
+      opacity: 0;
+    }
+  }
+
+@keyframes title-pulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 30px rgba(251, 191, 36, 0.4));
+  }
+  50% {
+    transform: scale(1.02);
+    filter: drop-shadow(0 0 50px rgba(251, 191, 36, 0.6));
+  }
+}
+
+.animate-title-pulse {
+  animation: title-pulse 3s ease-in-out infinite;
+}
+
+@keyframes ken-burns {
+    0% {
+      transform: scale(1) translate(0, 0);
+    }
+    25% {
+      transform: scale(1.1) translate(2%, -1%);
+    }
+    50% {
+      transform: scale(1.15) translate(-1%, 2%);
+    }
+    75% {
+      transform: scale(1.1) translate(1%, 1%);
+    }
+    100% {
+      transform: scale(1) translate(0, 0);
+    }
+  }
+
+  .animate-ken-burns {
+    animation: ken-burns 8s ease-in-out infinite;
+  }
+
+  .light-flare {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(40px);
+    animation: flare-pulse 4s ease-in-out infinite;
+  }
+
+  @keyframes flare-pulse {
+    0%, 100% {
+      opacity: 0.3;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.6;
+      transform: scale(1.2);
+    }
+  }
+
+  .tunnel-vignette {
+    position: absolute;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse 80% 60% at 50% 50%, transparent 0%, hsl(222 47% 3% / 0.4) 60%, hsl(222 47% 3% / 0.9) 100%);
+    pointer-events: none;
+  }
+
+  /**
+   * Select a Legend — gold headline + WC year on host-flag cards (PlayerLevelSelection, PlayerKickOff).
+   */
+  .category-title-animated {
+    background-image: linear-gradient(
+      115deg,
+      hsl(45 100% 58%) 0%,
+      hsl(48 96% 72%) 38%,
+      hsl(38 92% 52%) 72%,
+      hsl(45 100% 62%) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 14px hsl(45 100% 55% / 0.45))
+      drop-shadow(0 0 28px hsl(45 100% 50% / 0.25));
+    animation: title-pulse 3.2s ease-in-out infinite;
+  }
+
+  @keyframes flicker-gold {
+    0%,
+    100% {
+      filter: drop-shadow(0 0 10px hsl(45 100% 55% / 0.55))
+        drop-shadow(0 0 22px hsl(45 100% 50% / 0.28));
+      opacity: 1;
+    }
+    33% {
+      filter: drop-shadow(0 0 16px hsl(48 100% 65% / 0.75))
+        drop-shadow(0 0 36px hsl(45 100% 58% / 0.4));
+      opacity: 1;
+    }
+    66% {
+      filter: drop-shadow(0 0 8px hsl(40 95% 48% / 0.4))
+        drop-shadow(0 0 18px hsl(45 100% 45% / 0.2));
+      opacity: 0.92;
+    }
+  }
+
+  .animate-flicker-gold {
+    color: hsl(48 100% 62%);
+    text-shadow:
+      0 0 12px hsl(45 100% 55% / 0.9),
+      0 0 28px hsl(45 100% 50% / 0.45),
+      0 0 48px hsl(45 100% 48% / 0.22);
+    animation: flicker-gold 2.8s ease-in-out infinite;
+  }
+
+  /**
+   * Home hero: gradient fill must stay visible — do NOT put `.animate-flicker-gold` on the same node as
+   * `bg-clip-text text-transparent`. Wrap with this instead so only the neon pulse runs on the wrapper.
+   */
+  .hero-wc-ultimate-neon {
+    display: inline-block;
+    max-width: 100%;
+    padding: 0.12em 0.08em;
+    animation: flicker-gold 2.8s ease-in-out infinite;
+  }
+
+  .header-stats-neon {
+    box-shadow:
+      0 0 0 1px hsl(45 93% 47% / 0.25),
+      0 0 24px hsl(45 100% 55% / 0.12),
+      inset 0 1px 0 hsl(45 100% 70% / 0.06);
+  }
+
+  /**
+   * Destiny Route — select screen hero: navy base, gold aura, soft drift + shimmer (no extra deps).
+   */
+  .destiny-route-select-hero {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid hsl(45 93% 47% / 0.28);
+    box-shadow:
+      0 0 0 1px hsl(222 47% 4% / 0.85) inset,
+      0 0 100px hsl(45 100% 50% / 0.07),
+      0 28px 56px hsl(222 47% 2% / 0.55);
+  }
+
+  /** Select screen main headline — RELIVE THE ROAD → GLORY */
+  .destiny-route-select-hero-title {
+    text-align: center;
+    letter-spacing: 0.15em;
+  }
+
+  .destiny-route-select-aurora {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 130% 90% at 50% -25%, hsl(45 100% 58% / 0.14) 0%, transparent 58%),
+      radial-gradient(ellipse 70% 55% at 95% 40%, hsl(45 93% 47% / 0.07) 0%, transparent 52%),
+      radial-gradient(ellipse 55% 45% at 5% 95%, hsl(45 100% 52% / 0.06) 0%, transparent 48%);
+    animation: destiny-route-aurora-drift 16s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes destiny-route-aurora-drift {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+      opacity: 1;
+    }
+    40% {
+      transform: translate(1.5%, -1.2%) scale(1.03);
+      opacity: 0.92;
+    }
+    70% {
+      transform: translate(-1%, 0.8%) scale(1.01);
+      opacity: 0.98;
+    }
+  }
+
+  .destiny-route-select-shimmer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 38%,
+      hsl(45 100% 72% / 0.06) 50%,
+      transparent 62%
+    );
+    background-size: 220% 100%;
+    animation: destiny-route-shimmer-pass 9s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes destiny-route-shimmer-pass {
+    0% {
+      background-position: 120% 0;
+    }
+    100% {
+      background-position: -120% 0;
+    }
+  }
+
+  .destiny-route-select-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(hsl(210 40% 98% / 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(210 40% 98% / 0.04) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: radial-gradient(ellipse 85% 75% at 50% 35%, black 10%, transparent 72%);
+    pointer-events: none;
+  }
+
+  .destiny-route-glory-line {
+    display: block;
+    margin-top: 0.15em;
+  }
+
+  @media (min-width: 640px) {
+    .destiny-route-glory-line {
+      display: inline;
+      margin-top: 0;
+      margin-left: 0.35em;
+    }
+  }
+
+  .destiny-route-glory-neon {
+    display: inline-block;
+    background-image: linear-gradient(
+      118deg,
+      hsl(45 100% 58%) 0%,
+      hsl(48 96% 74%) 42%,
+      hsl(38 92% 52%) 78%,
+      hsl(45 100% 60%) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 18px hsl(45 100% 55% / 0.55))
+      drop-shadow(0 0 36px hsl(45 100% 50% / 0.22));
+    animation: destiny-route-glory-pulse 3.4s ease-in-out infinite;
+  }
+
+  @keyframes destiny-route-glory-pulse {
+    0%,
+    100% {
+      filter: drop-shadow(0 0 14px hsl(45 100% 55% / 0.45))
+        drop-shadow(0 0 28px hsl(45 100% 50% / 0.18));
+    }
+    50% {
+      filter: drop-shadow(0 0 22px hsl(48 100% 62% / 0.65))
+        drop-shadow(0 0 44px hsl(45 100% 55% / 0.32));
+    }
+  }
+
+  .destiny-route-arrow-pulse {
+    display: inline-block;
+    animation: destiny-route-arrow-nudge 2.2s ease-in-out infinite;
+  }
+
+  @keyframes destiny-route-arrow-nudge {
+    0%,
+    100% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    50% {
+      transform: translateX(4px);
+      opacity: 0.88;
+    }
+  }
+}

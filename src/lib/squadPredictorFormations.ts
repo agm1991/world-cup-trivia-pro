@@ -1,0 +1,161 @@
+/** Exactly 10 formations — slot order: GK, then lines from back to front. */
+
+export const SQUAD_PREDICTOR_FORMATIONS = [
+  '4-3-3',
+  '4-4-2',
+  '3-5-2',
+  '4-2-3-1',
+  '5-3-2',
+  '3-4-3',
+  '4-1-4-1',
+  '4-5-1',
+  '3-4-2-1',
+  '4-3-2-1',
+] as const;
+
+export type SquadPredictorFormationId = (typeof SQUAD_PREDICTOR_FORMATIONS)[number];
+
+export type PitchSlot = { top: string; left: string };
+
+/** Percent positions — GK low top % = bottom of pitch; attack toward top. */
+export const PITCH_SLOTS_BY_FORMATION: Record<SquadPredictorFormationId, PitchSlot[]> = {
+  '4-3-3': [
+    { top: '88%', left: '50%' },
+    { top: '72%', left: '12%' },
+    { top: '72%', left: '38%' },
+    { top: '72%', left: '62%' },
+    { top: '72%', left: '88%' },
+    { top: '48%', left: '25%' },
+    { top: '48%', left: '50%' },
+    { top: '48%', left: '75%' },
+    { top: '22%', left: '25%' },
+    { top: '22%', left: '50%' },
+    { top: '22%', left: '75%' },
+  ],
+  '4-4-2': [
+    { top: '88%', left: '50%' },
+    { top: '72%', left: '12%' },
+    { top: '72%', left: '38%' },
+    { top: '72%', left: '62%' },
+    { top: '72%', left: '88%' },
+    { top: '52%', left: '15%' },
+    { top: '52%', left: '38%' },
+    { top: '52%', left: '62%' },
+    { top: '52%', left: '85%' },
+    { top: '24%', left: '38%' },
+    { top: '24%', left: '62%' },
+  ],
+  '3-5-2': [
+    { top: '88%', left: '50%' },
+    { top: '72%', left: '22%' },
+    { top: '72%', left: '50%' },
+    { top: '72%', left: '78%' },
+    { top: '50%', left: '12%' },
+    { top: '50%', left: '32%' },
+    { top: '50%', left: '50%' },
+    { top: '50%', left: '68%' },
+    { top: '50%', left: '88%' },
+    { top: '24%', left: '38%' },
+    { top: '24%', left: '62%' },
+  ],
+  '4-2-3-1': [
+    { top: '88%', left: '50%' },
+    { top: '72%', left: '12%' },
+    { top: '72%', left: '35%' },
+    { top: '72%', left: '65%' },
+    { top: '72%', left: '88%' },
+    { top: '58%', left: '35%' },
+    { top: '58%', left: '65%' },
+    { top: '42%', left: '20%' },
+    { top: '42%', left: '50%' },
+    { top: '42%', left: '80%' },
+    { top: '18%', left: '50%' },
+  ],
+  '5-3-2': [
+    { top: '88%', left: '50%' },
+    { top: '72%', left: '10%' },
+    { top: '72%', left: '30%' },
+    { top: '72%', left: '50%' },
+    { top: '72%', left: '70%' },
+    { top: '72%', left: '90%' },
+    { top: '48%', left: '30%' },
+    { top: '48%', left: '50%' },
+    { top: '48%', left: '70%' },
+    { top: '24%', left: '38%' },
+    { top: '24%', left: '62%' },
+  ],
+  '3-4-3': [
+    { top: '88%', left: '50%' },
+    { top: '72%', left: '22%' },
+    { top: '72%', left: '50%' },
+    { top: '72%', left: '78%' },
+    { top: '50%', left: '15%' },
+    { top: '50%', left: '38%' },
+    { top: '50%', left: '62%' },
+    { top: '50%', left: '85%' },
+    { top: '22%', left: '25%' },
+    { top: '22%', left: '50%' },
+    { top: '22%', left: '75%' },
+  ],
+  '4-1-4-1': [
+    { top: '88%', left: '50%' },
+    { top: '72%', left: '12%' },
+    { top: '72%', left: '35%' },
+    { top: '72%', left: '65%' },
+    { top: '72%', left: '88%' },
+    { top: '58%', left: '50%' },
+    { top: '44%', left: '12%' },
+    { top: '44%', left: '38%' },
+    { top: '44%', left: '62%' },
+    { top: '44%', left: '88%' },
+    { top: '18%', left: '50%' },
+  ],
+  '4-5-1': [
+    { top: '88%', left: '50%' },
+    { top: '72%', left: '12%' },
+    { top: '72%', left: '35%' },
+    { top: '72%', left: '65%' },
+    { top: '72%', left: '88%' },
+    { top: '48%', left: '12%' },
+    { top: '48%', left: '32%' },
+    { top: '48%', left: '50%' },
+    { top: '48%', left: '68%' },
+    { top: '48%', left: '88%' },
+    { top: '18%', left: '50%' },
+  ],
+  '3-4-2-1': [
+    { top: '88%', left: '50%' },
+    { top: '72%', left: '22%' },
+    { top: '72%', left: '50%' },
+    { top: '72%', left: '78%' },
+    { top: '52%', left: '15%' },
+    { top: '52%', left: '38%' },
+    { top: '52%', left: '62%' },
+    { top: '52%', left: '85%' },
+    { top: '30%', left: '35%' },
+    { top: '30%', left: '65%' },
+    { top: '12%', left: '50%' },
+  ],
+  '4-3-2-1': [
+    { top: '88%', left: '50%' },
+    { top: '72%', left: '12%' },
+    { top: '72%', left: '35%' },
+    { top: '72%', left: '65%' },
+    { top: '72%', left: '88%' },
+    { top: '55%', left: '25%' },
+    { top: '55%', left: '50%' },
+    { top: '55%', left: '75%' },
+    { top: '34%', left: '35%' },
+    { top: '34%', left: '65%' },
+    { top: '14%', left: '50%' },
+  ],
+};
+
+export function getSlotsForFormation(formation: string): PitchSlot[] {
+  const id = formation as SquadPredictorFormationId;
+  return PITCH_SLOTS_BY_FORMATION[id] ?? PITCH_SLOTS_BY_FORMATION['4-3-3'];
+}
+
+export function isValidFormation(f: string): f is SquadPredictorFormationId {
+  return (SQUAD_PREDICTOR_FORMATIONS as readonly string[]).includes(f);
+}
