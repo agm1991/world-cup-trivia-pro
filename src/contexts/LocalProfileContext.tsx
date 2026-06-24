@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react';
 import { Category } from '@/types/game';
 import {
   readGameStatsFromStorage,
@@ -26,6 +26,13 @@ import {
   GUEST_PROFILE_COUNTRY,
   GUEST_PROFILE_NAME,
 } from '@/constants/profileGate';
+import { useGameAccess } from '@/contexts/GameAccessContext';
+import {
+  buildLocalCloudPayload,
+  syncProfileWithCloud,
+  upsertCloudProfile,
+  applyCloudPayloadToLocalStorage,
+} from '@/lib/cloudProfileSync';
 
 interface LocalProfile {
   name: string;
@@ -61,10 +68,14 @@ interface LocalProfileContextType {
     categoriesPlayed: number;
     fastestTimerRunSec?: number;
   };
-  /** Short log lines for Profile “Recent results” (local only). */
+  /** Short log lines for Profile “Recent results”. */
   recentCompletions: RecentCompletion[];
   refreshRecentCompletionsFromStorage: () => void;
   recordGameCompletion: (entry: Omit<RecentCompletion, 'id' | 'at'>) => void;
+  /** True when signed in with email — profile and stats sync to Supabase. */
+  isCloudSyncEnabled: boolean;
+  /** Pull from cloud, merge with local, and apply — for manual sync while signed in. */
+  syncAccountWithCloud: () => Promise<{ ok: true } | { ok: false; error: string }>;
 }
 
 const LocalProfileContext = createContext<LocalProfileContextType | undefined>(undefined);
@@ -182,6 +193,12 @@ const createEmptyCategoryStats = (): CategoryStats => ({
 });
 
 export const LocalProfileProvider = ({ children }: { children: ReactNode }) => {
+  const { authUser } = useGameAccess();
+  const cloudSaveTimerRef = useRef<number | null>(null);
+  const cloudSyncInFlightRef = useRef(false);
+  const cloudInitialSyncDoneRef = useRef<string | null>(null);
+  const isCloudSyncEnabled = Boolean(authUser?.id);
+
   const [profile, setProfile] = useState<LocalProfile | null>(() => {
     try {
       applyPreOnlineDataResetSync();
@@ -258,6 +275,108 @@ export const LocalProfileProvider = ({ children }: { children: ReactNode }) => {
     setRecentCompletions(readRecentCompletions());
   }, []);
 
+  const pushToCloud = useCallback(async (userId: string) => {
+    const payload = buildLocalCloudPayload(
+      readStoredProfile(),
+      readGameStatsFromStorage(),
+      readRecentCompletions(),
+    );
+    await upsertCloudProfile(userId, payload);
+  }, []);
+
+  const runCloudSync = useCallback(async (
+    userId: string,
+    options?: { isCancelled?: () => boolean },
+  ): Promise<boolean> => {
+    if (cloudSyncInFlightRef.current) return false;
+
+    cloudSyncInFlightRef.current = true;
+    cloudInitialSyncDoneRef.current = null;
+
+    try {
+      const localPayload = buildLocalCloudPayload(
+        readStoredProfile(),
+        readGameStatsFromStorage(),
+        readRecentCompletions(),
+      );
+
+      const merged = await syncProfileWithCloud(userId, localPayload);
+      if (!merged || options?.isCancelled?.()) return false;
+
+      applyCloudPayloadToLocalStorage(merged);
+      setProfile(readStoredProfile());
+      setGameStats(merged.gameStats);
+      setRecentCompletions(merged.recentCompletions);
+      cloudInitialSyncDoneRef.current = userId;
+      return true;
+    } finally {
+      cloudSyncInFlightRef.current = false;
+    }
+  }, []);
+
+  const syncAccountWithCloud = useCallback(async (): Promise<
+    { ok: true } | { ok: false; error: string }
+  > => {
+    const userId = authUser?.id;
+    if (!userId) {
+      return { ok: false, error: 'Sign in with your email first.' };
+    }
+    if (cloudSyncInFlightRef.current) {
+      return { ok: false, error: 'Sync already in progress.' };
+    }
+
+    const success = await runCloudSync(userId);
+    if (!success) {
+      return { ok: false, error: 'Could not sync. Check your connection and try again.' };
+    }
+    return { ok: true };
+  }, [authUser?.id, runCloudSync]);
+
+  const scheduleCloudSave = useCallback(() => {
+    const userId = authUser?.id;
+    if (!userId || cloudInitialSyncDoneRef.current !== userId) return;
+
+    if (cloudSaveTimerRef.current != null) {
+      window.clearTimeout(cloudSaveTimerRef.current);
+    }
+
+    cloudSaveTimerRef.current = window.setTimeout(() => {
+      cloudSaveTimerRef.current = null;
+      void pushToCloud(userId);
+    }, 1500);
+  }, [authUser?.id, pushToCloud]);
+
+  // Pull from cloud on email login, merge with this device, then push merged snapshot back.
+  useEffect(() => {
+    const userId = authUser?.id;
+    if (!userId) {
+      cloudInitialSyncDoneRef.current = null;
+      return;
+    }
+
+    if (cloudSyncInFlightRef.current) return;
+
+    let cancelled = false;
+
+    void (async () => {
+      await runCloudSync(userId, { isCancelled: () => cancelled });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser?.id, runCloudSync]);
+
+  // Push local edits to cloud while signed in (debounced).
+  useEffect(() => {
+    scheduleCloudSave();
+    return () => {
+      if (cloudSaveTimerRef.current != null) {
+        window.clearTimeout(cloudSaveTimerRef.current);
+      }
+    };
+  }, [profile, gameStats, recentCompletions, scheduleCloudSave]);
+
   // Same-tab: games write to localStorage; re-read when tab becomes visible again.
   useEffect(() => {
     const sync = () => {
@@ -301,7 +420,7 @@ export const LocalProfileProvider = ({ children }: { children: ReactNode }) => {
 
   // Force save on page close/unload
   useEffect(() => {
-    const handleBeforeUnload = () => {
+    const persistLocal = () => {
       try {
         localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(gameStats));
         if (profile) {
@@ -312,15 +431,18 @@ export const LocalProfileProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
+    const handleBeforeUnload = () => {
+      persistLocal();
+      if (authUser?.id) {
+        void pushToCloud(authUser.id);
+      }
+    };
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        try {
-          localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(gameStats));
-          if (profile) {
-            localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
-          }
-        } catch (e) {
-          console.error('Failed to save on visibility change:', e);
+        persistLocal();
+        if (authUser?.id) {
+          void pushToCloud(authUser.id);
         }
       }
     };
@@ -332,7 +454,7 @@ export const LocalProfileProvider = ({ children }: { children: ReactNode }) => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [gameStats, profile]);
+  }, [gameStats, profile, authUser?.id, pushToCloud]);
 
   const createProfile = (name: string, country: string, gender?: string, age?: number) => {
     if (!hasGameAccess()) {
@@ -440,6 +562,8 @@ export const LocalProfileProvider = ({ children }: { children: ReactNode }) => {
         recentCompletions,
         refreshRecentCompletionsFromStorage,
         recordGameCompletion,
+        isCloudSyncEnabled,
+        syncAccountWithCloud,
       }}
     >
       {children}

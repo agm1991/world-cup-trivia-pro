@@ -76,3 +76,26 @@ export function clearFastestTimerRun(): void {
     /* ignore */
   }
 }
+
+/** Apply cloud-synced timer bests to localStorage (cross-device restore). */
+export function applyFastestTimerData(
+  globalSec?: number,
+  byCategory?: Record<string, number>,
+): void {
+  try {
+    if (globalSec != null && globalSec > 0) {
+      localStorage.setItem(FASTEST_TIMER_RUN_KEY, String(Math.floor(globalSec)));
+    } else {
+      localStorage.removeItem(FASTEST_TIMER_RUN_KEY);
+    }
+
+    const map = byCategory ?? {};
+    if (Object.keys(map).length > 0) {
+      writeCategoryFastestMap(map);
+    } else {
+      localStorage.removeItem(FASTEST_TIMER_BY_CATEGORY_KEY);
+    }
+  } catch {
+    /* ignore quota */
+  }
+}

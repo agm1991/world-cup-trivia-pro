@@ -15,9 +15,16 @@ import { toast } from 'sonner';
 type RestorePurchaseModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** `sync` — account sync wording; `restore` (default) — purchase restore wording. */
+  variant?: 'restore' | 'sync';
 };
 
-export function RestorePurchaseModal({ open, onOpenChange }: RestorePurchaseModalProps) {
+export function RestorePurchaseModal({
+  open,
+  onOpenChange,
+  variant = 'restore',
+}: RestorePurchaseModalProps) {
+  const isSync = variant === 'sync';
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -97,11 +104,13 @@ export function RestorePurchaseModal({ open, onOpenChange }: RestorePurchaseModa
         }}
       >
         <DialogHeader>
-          <DialogTitle className="text-amber-100">Log in / Restore purchase</DialogTitle>
+          <DialogTitle className="text-amber-100">
+            {isSync ? 'Sync account' : 'Log in / Restore purchase'}
+          </DialogTitle>
           <DialogDescription>
-            Already paid on another device? If you previously paid £1 on your phone, laptop, or tablet,
-            enter your email below. We will send you a magic link to instantly restore your access for
-            free.
+            {isSync
+              ? 'Sign in with your email to sync your profile, scores, coins, and progress across all your devices.'
+              : 'Already paid on another device? If you previously paid £1 on your phone, laptop, or tablet, enter your email below. We will send you a magic link to instantly restore your access for free.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -109,7 +118,9 @@ export function RestorePurchaseModal({ open, onOpenChange }: RestorePurchaseModa
           <div className="space-y-4 py-2">
             <p className="text-sm text-muted-foreground" role="status" aria-live="polite">
               We sent a link to <span className="font-medium text-foreground">{email.trim()}</span>.
-              Open that email on this phone or computer and tap the link to finish restoring access.
+              {isSync
+                ? ' Open that email on this device and tap the link to sign in and sync your progress.'
+                : ' Open that email on this phone or computer and tap the link to finish restoring access.'}
             </p>
             <Button type="button" variant="outline" className="w-full" onClick={() => handleOpenChange(false)}>
               Close

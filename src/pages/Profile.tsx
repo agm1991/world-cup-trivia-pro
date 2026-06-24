@@ -28,6 +28,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { useLocalProfile } from '@/contexts/LocalProfileContext';
+import { useGameAccess } from '@/contexts/GameAccessContext';
 import { hasGameAccess } from '@/lib/gameAccess';
 import { CATEGORIES_PAGE_DISPLAY_ITEMS } from '@/lib/categoryNavigation';
 import { cn } from '@/lib/utils';
@@ -69,7 +70,9 @@ const Profile = () => {
     refreshGameStatsFromStorage,
     recentCompletions,
     refreshRecentCompletionsFromStorage,
+    isCloudSyncEnabled,
   } = useLocalProfile();
+  const { authUser } = useGameAccess();
   const [openCategories, setOpenCategories] = useState<Set<string>>(() => new Set());
 
   const totalStats = getTotalStats();
@@ -233,7 +236,9 @@ const Profile = () => {
                 Stats
               </h1>
               <p className="text-muted-foreground text-base sm:text-lg mt-2">
-                Scores, coins, and progress saved locally on this device.
+                {isCloudSyncEnabled
+                  ? `Synced to your account (${authUser?.email ?? 'signed in'}). Progress follows you on every device.`
+                  : 'Sign in with your email (Menu → Restore purchase) to sync scores, coins, and progress across devices.'}
               </p>
             </div>
             <div className="w-10 shrink-0" aria-hidden />

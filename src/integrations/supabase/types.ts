@@ -16,29 +16,47 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
+          age: number | null
           avatar_url: string | null
           country: string
           created_at: string
           display_name: string
+          fastest_timer_by_category: Json
+          fastest_timer_run_sec: number | null
+          game_stats: Json
+          gender: string | null
           id: string
+          recent_completions: Json
           updated_at: string
           user_id: string
         }
         Insert: {
+          age?: number | null
           avatar_url?: string | null
           country: string
           created_at?: string
           display_name: string
+          fastest_timer_by_category?: Json
+          fastest_timer_run_sec?: number | null
+          game_stats?: Json
+          gender?: string | null
           id?: string
+          recent_completions?: Json
           updated_at?: string
           user_id: string
         }
         Update: {
+          age?: number | null
           avatar_url?: string | null
           country?: string
           created_at?: string
           display_name?: string
+          fastest_timer_by_category?: Json
+          fastest_timer_run_sec?: number | null
+          game_stats?: Json
+          gender?: string | null
           id?: string
+          recent_completions?: Json
           updated_at?: string
           user_id?: string
         }
