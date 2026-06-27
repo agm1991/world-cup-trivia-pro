@@ -49,6 +49,22 @@ function isGuestProfile(profile: UserProfile | null): boolean {
   return profile.name === GUEST_PROFILE_NAME && profile.country === GUEST_PROFILE_COUNTRY;
 }
 
+export function hasMeaningfulProfile(profile: UserProfile | null): boolean {
+  return !isGuestProfile(profile);
+}
+
+export function getTotalScoreFromGameStats(gameStats: GameStats): number {
+  return Object.values(gameStats).reduce((sum, category) => sum + (category?.totalScore ?? 0), 0);
+}
+
+export function isCloudPayloadProgressEmpty(payload: CloudProfilePayload): boolean {
+  return getTotalScoreFromGameStats(payload.gameStats) <= 0 && payload.recentCompletions.length === 0;
+}
+
+export function isCloudPayloadEmpty(payload: CloudProfilePayload): boolean {
+  return isCloudPayloadProgressEmpty(payload) && !hasMeaningfulProfile(payload.profile);
+}
+
 function normalizeRecentCompletions(raw: unknown): RecentCompletion[] {
   if (!Array.isArray(raw)) return [];
   return raw.filter(
@@ -195,21 +211,23 @@ function mergeFastestTimerRunSec(local?: number, remote?: number): number | unde
 }
 
 function pickProfile(local: UserProfile | null, remote: UserProfile | null): UserProfile | null {
-  if (isGuestProfile(local)) return remote;
-  if (isGuestProfile(remote)) return local;
-  if (!local) return remote;
-  if (!remote) return local;
+  const localMeaningful = hasMeaningfulProfile(local);
+  const remoteMeaningful = hasMeaningfulProfile(remote);
 
-  const localComplete = Boolean(local.gender && local.age);
-  const remoteComplete = Boolean(remote.gender && remote.age);
+  if (!localMeaningful && !remoteMeaningful) return null;
+  if (!localMeaningful) return remote;
+  if (!remoteMeaningful) return local;
+
+  const localComplete = Boolean(local!.gender && local!.age);
+  const remoteComplete = Boolean(remote!.gender && remote!.age);
   if (localComplete && !remoteComplete) return local;
   if (remoteComplete && !localComplete) return remote;
 
   return {
-    name: remote.name || local.name,
-    country: remote.country || local.country,
-    gender: remote.gender ?? local.gender,
-    age: remote.age ?? local.age,
+    name: remote!.name || local!.name,
+    country: remote!.country || local!.country,
+    gender: remote!.gender ?? local!.gender,
+    age: remote!.age ?? local!.age,
   };
 }
 
@@ -248,8 +266,6 @@ export function buildLocalCloudPayload(
 export function applyCloudPayloadToLocalStorage(payload: CloudProfilePayload): void {
   if (payload.profile) {
     localStorage.setItem('wcq_user_profile', JSON.stringify(payload.profile));
-  } else {
-    localStorage.removeItem('wcq_user_profile');
   }
 
   localStorage.setItem('wcq_game_stats', JSON.stringify(payload.gameStats));
@@ -322,10 +338,24 @@ export async function syncProfileWithCloud(
   local: CloudProfilePayload,
 ): Promise<CloudProfilePayload | null> {
   const remote = await fetchCloudProfile(userId);
+  const localHasData = !isCloudPayloadEmpty(local);
+  const remoteHasData = remote ? !isCloudPayloadEmpty(remote) : false;
 
   if (!remote) {
     const uploaded = await upsertCloudProfile(userId, local);
     return uploaded ? local : null;
+  }
+
+  // Empty cloud shell — push local progress/profile instead of merging zeros over local data.
+  if (!remoteHasData && localHasData) {
+    const uploaded = await upsertCloudProfile(userId, local);
+    return uploaded ? local : null;
+  }
+
+  // Fresh device with no local progress — pull cloud snapshot.
+  if (!localHasData && remoteHasData) {
+    const uploaded = await upsertCloudProfile(userId, remote);
+    return uploaded ? remote : null;
   }
 
   const merged = mergeCloudAndLocal(local, remote);

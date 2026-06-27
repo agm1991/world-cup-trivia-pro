@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   BarChart3,
   ChevronRight,
-  Cloud,
   LineChart,
   Loader2,
   LogOut,
@@ -12,10 +11,8 @@ import {
   User,
 } from 'lucide-react';
 import { Navigation } from '@/components/Navigation';
-import { RestorePurchaseModal } from '@/components/RestorePurchaseModal';
 import { Button } from '@/components/ui/button';
 import { useGameAccess } from '@/contexts/GameAccessContext';
-import { useLocalProfile } from '@/contexts/LocalProfileContext';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -55,35 +52,8 @@ const MENU_ITEMS = [
 const Menu = () => {
   const navigate = useNavigate();
   const { authUser, signOut } = useGameAccess();
-  const { syncAccountWithCloud } = useLocalProfile();
   const [signingOut, setSigningOut] = useState(false);
-  const [syncModalOpen, setSyncModalOpen] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const isLoggedIn = Boolean(authUser);
-
-  const handleSyncAccount = async () => {
-    if (!isLoggedIn) {
-      setSyncModalOpen(true);
-      return;
-    }
-
-    if (syncing) return;
-    setSyncing(true);
-    const toastId = toast.loading('Syncing account…');
-
-    try {
-      const result = await syncAccountWithCloud();
-      if (!result.ok) {
-        toast.error(result.error, { id: toastId });
-        return;
-      }
-      toast.success('Account synced — your progress is up to date.', { id: toastId });
-    } catch {
-      toast.error('Could not sync. Please try again.', { id: toastId });
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   const handleSignOut = async () => {
     if (signingOut) return;
@@ -219,47 +189,27 @@ const Menu = () => {
                 </span>
               </div>
 
-              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+              {isLoggedIn ? (
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="w-full sm:w-auto border-sky-500/35 text-sky-200 hover:bg-sky-500/10"
-                  onClick={() => void handleSyncAccount()}
-                  disabled={syncing}
+                  className="w-full sm:w-auto border-destructive/40 text-destructive hover:bg-destructive/10"
+                  onClick={() => void handleSignOut()}
+                  disabled={signingOut}
                 >
-                  {syncing ? (
+                  {signingOut ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
                   ) : (
-                    <Cloud className="mr-2 h-4 w-4" aria-hidden />
+                    <LogOut className="mr-2 h-4 w-4" aria-hidden />
                   )}
-                  Sync account
+                  Log Out
                 </Button>
-
-                {isLoggedIn ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-full sm:w-auto border-destructive/40 text-destructive hover:bg-destructive/10"
-                    onClick={() => void handleSignOut()}
-                    disabled={signingOut}
-                  >
-                    {signingOut ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-                    ) : (
-                      <LogOut className="mr-2 h-4 w-4" aria-hidden />
-                    )}
-                    Log Out
-                  </Button>
-                ) : null}
-              </div>
+              ) : null}
             </div>
           </div>
         </div>
       </div>
-
-      <RestorePurchaseModal open={syncModalOpen} onOpenChange={setSyncModalOpen} variant="sync" />
     </div>
   );
 };

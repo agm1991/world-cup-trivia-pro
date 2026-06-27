@@ -27,6 +27,7 @@ import {
   GUEST_PROFILE_NAME,
 } from '@/constants/profileGate';
 import { useGameAccess } from '@/contexts/GameAccessContext';
+import { supabase } from '@/integrations/supabase/client';
 import {
   buildLocalCloudPayload,
   syncProfileWithCloud,
@@ -359,6 +360,11 @@ export const LocalProfileProvider = ({ children }: { children: ReactNode }) => {
     let cancelled = false;
 
     void (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (cancelled || !session?.user?.id || session.user.id !== userId) return;
+
       await runCloudSync(userId, { isCancelled: () => cancelled });
     })();
 

@@ -10,7 +10,7 @@ import { confirmPaidCheckout, hasGameAccess } from '@/lib/gameAccess';
 import { syncGameAccessFromSupabase } from '@/lib/restorePurchase';
 import { REQUIRE_PROFILE_TO_PLAY } from '@/constants/profileGate';
 import { startKickOffCheckout } from '@/lib/stripeCheckout';
-import { Goal, User } from 'lucide-react';
+import { Goal, Cloud, User } from 'lucide-react';
 import { toast } from 'sonner';
 import fieldBackground from '@/assets/field-background.jpg';
 import worldCupTrophy from '@/assets/world_cup.webp';
@@ -22,12 +22,14 @@ const Home = () => {
   const { profile, showProfileModal, setShowProfileModal } = useLocalProfile();
   const profileComplete = isProfileComplete(profile);
   const hasSavedProfile = Boolean(profile?.name?.trim() && profile?.country);
-  const { hasAccess, refreshAccess } = useGameAccess();
+  const { hasAccess, refreshAccess, authUser } = useGameAccess();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [restoringAccess, setRestoringAccess] = useState(false);
   const [restoreModalOpen, setRestoreModalOpen] = useState(false);
+  const [syncModalOpen, setSyncModalOpen] = useState(false);
   const paid = hasAccess || hasGameAccess();
+  const isLoggedIn = Boolean(authUser);
 
   useEffect(() => {
     const checkout = searchParams.get('checkout');
@@ -304,6 +306,18 @@ const Home = () => {
               </Button>
             </div>
 
+            {!isLoggedIn && (
+              <Button
+                size="lg"
+                className="w-full max-w-lg text-xl md:text-2xl px-12 py-8 border-2 border-sky-400/80 bg-gradient-to-r from-sky-600/90 via-sky-500/90 to-cyan-500/90 text-white font-black uppercase tracking-wide shadow-[0_0_32px_hsl(198_93%_50%/0.45)] transition-transform duration-300 hover:scale-[1.02] hover:from-sky-500 hover:via-sky-400 hover:to-cyan-400 gap-3"
+                onClick={() => setSyncModalOpen(true)}
+                disabled={checkoutLoading || verifyingPayment || restoringAccess}
+              >
+                <Cloud className="w-7 h-7" />
+                SYNC ACCOUNT
+              </Button>
+            )}
+
             {!paid && (
               <button
                 type="button"
@@ -335,6 +349,7 @@ const Home = () => {
 
       <ProfileModal open={showProfileModal} onOpenChange={setShowProfileModal} />
       <RestorePurchaseModal open={restoreModalOpen} onOpenChange={setRestoreModalOpen} />
+      <RestorePurchaseModal open={syncModalOpen} onOpenChange={setSyncModalOpen} variant="sync" />
     </div>
   );
 };
