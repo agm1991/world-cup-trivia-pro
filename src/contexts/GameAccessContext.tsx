@@ -75,10 +75,19 @@ export function GameAccessProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
       setAuthUser(session?.user ?? null);
-      void refreshAccess();
+
+      if (event === 'SIGNED_OUT') {
+        setHasAccess(hasGameAccess());
+        return;
+      }
+
+      // Purchase restore only on a fresh sign-in when this device is still locked — not on token refresh or account sync.
+      if (event === 'SIGNED_IN' && !BYPASS_PAYMENT && !hasGameAccess()) {
+        void refreshAccess();
+      }
     });
 
     const unsubscribeUnlock = subscribeGameAccessUnlock(() => {

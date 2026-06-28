@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { sendRestoreMagicLink } from '@/lib/restorePurchase';
+import { sendAccountSyncMagicLink, sendRestoreMagicLink } from '@/lib/restorePurchase';
 import { toast } from 'sonner';
 
 type RestorePurchaseModalProps = {
@@ -65,7 +65,9 @@ export function RestorePurchaseModal({
     const toastId = toast.loading('Sending link…');
 
     try {
-      const result = await sendRestoreMagicLink(trimmed);
+      const result = isSync
+        ? await sendAccountSyncMagicLink(trimmed)
+        : await sendRestoreMagicLink(trimmed);
 
       if (!result.ok) {
         setStatusMessage(result.error);

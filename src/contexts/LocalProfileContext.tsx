@@ -26,6 +26,7 @@ import {
   GUEST_PROFILE_COUNTRY,
   GUEST_PROFILE_NAME,
 } from '@/constants/profileGate';
+import { waitForAuthSession } from '@/lib/restorePurchase';
 import { useGameAccess } from '@/contexts/GameAccessContext';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -198,6 +199,7 @@ export const LocalProfileProvider = ({ children }: { children: ReactNode }) => {
   const cloudSaveTimerRef = useRef<number | null>(null);
   const cloudSyncInFlightRef = useRef(false);
   const cloudInitialSyncDoneRef = useRef<string | null>(null);
+  const cloudSyncPromiseRef = useRef<Promise<boolean> | null>(null);
   const isCloudSyncEnabled = Boolean(authUser?.id);
 
   const [profile, setProfile] = useState<LocalProfile | null>(() => {
@@ -289,30 +291,41 @@ export const LocalProfileProvider = ({ children }: { children: ReactNode }) => {
     userId: string,
     options?: { isCancelled?: () => boolean },
   ): Promise<boolean> => {
-    if (cloudSyncInFlightRef.current) return false;
-
-    cloudSyncInFlightRef.current = true;
-    cloudInitialSyncDoneRef.current = null;
-
-    try {
-      const localPayload = buildLocalCloudPayload(
-        readStoredProfile(),
-        readGameStatsFromStorage(),
-        readRecentCompletions(),
-      );
-
-      const merged = await syncProfileWithCloud(userId, localPayload);
-      if (!merged || options?.isCancelled?.()) return false;
-
-      applyCloudPayloadToLocalStorage(merged);
-      setProfile(readStoredProfile());
-      setGameStats(merged.gameStats);
-      setRecentCompletions(merged.recentCompletions);
-      cloudInitialSyncDoneRef.current = userId;
-      return true;
-    } finally {
-      cloudSyncInFlightRef.current = false;
+    if (cloudSyncPromiseRef.current) {
+      return cloudSyncPromiseRef.current;
     }
+
+    const syncTask = (async (): Promise<boolean> => {
+      cloudSyncInFlightRef.current = true;
+      cloudInitialSyncDoneRef.current = null;
+
+      try {
+        const auth = await waitForAuthSession();
+        if (!auth || auth.userId !== userId || options?.isCancelled?.()) return false;
+
+        const localPayload = buildLocalCloudPayload(
+          readStoredProfile(),
+          readGameStatsFromStorage(),
+          readRecentCompletions(),
+        );
+
+        const merged = await syncProfileWithCloud(userId, localPayload);
+        if (!merged || options?.isCancelled?.()) return false;
+
+        applyCloudPayloadToLocalStorage(merged);
+        setProfile(readStoredProfile());
+        setGameStats(merged.gameStats);
+        setRecentCompletions(merged.recentCompletions);
+        cloudInitialSyncDoneRef.current = userId;
+        return true;
+      } finally {
+        cloudSyncInFlightRef.current = false;
+        cloudSyncPromiseRef.current = null;
+      }
+    })();
+
+    cloudSyncPromiseRef.current = syncTask;
+    return syncTask;
   }, []);
 
   const syncAccountWithCloud = useCallback(async (): Promise<
@@ -320,10 +333,15 @@ export const LocalProfileProvider = ({ children }: { children: ReactNode }) => {
   > => {
     const userId = authUser?.id;
     if (!userId) {
-      return { ok: false, error: 'Sign in with your email first.' };
-    }
-    if (cloudSyncInFlightRef.current) {
-      return { ok: false, error: 'Sync already in progress.' };
+      const auth = await waitForAuthSession();
+      if (!auth) {
+        return { ok: false, error: 'Sign in with your email first.' };
+      }
+      const success = await runCloudSync(auth.userId);
+      if (!success) {
+        return { ok: false, error: 'Could not sync. Check your connection and try again.' };
+      }
+      return { ok: true };
     }
 
     const success = await runCloudSync(userId);
@@ -355,23 +373,26 @@ export const LocalProfileProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    if (cloudSyncInFlightRef.current) return;
-
     let cancelled = false;
-
-    void (async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (cancelled || !session?.user?.id || session.user.id !== userId) return;
-
-      await runCloudSync(userId, { isCancelled: () => cancelled });
-    })();
+    void runCloudSync(userId, { isCancelled: () => cancelled });
 
     return () => {
       cancelled = true;
     };
   }, [authUser?.id, runCloudSync]);
+
+  // Magic-link sign-in: sync immediately on SIGNED_IN before authUser state may settle.
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user?.id) {
+        void runCloudSync(session.user.id);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [runCloudSync]);
 
   // Push local edits to cloud while signed in (debounced).
   useEffect(() => {
