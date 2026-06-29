@@ -15,16 +15,36 @@ export function setMagicLinkIntent(intent: MagicLinkIntent): void {
   }
 }
 
-/** Read and clear the intent stored when the magic link was sent (fallback if redirect params are stripped). */
-export function consumeMagicLinkIntent(): MagicLinkIntent | null {
+/** Read intent without clearing — for auth listeners that run before URL handlers consume it. */
+export function peekMagicLinkIntent(): MagicLinkIntent | null {
   try {
     const intent = sessionStorage.getItem(MAGIC_LINK_INTENT_KEY);
-    sessionStorage.removeItem(MAGIC_LINK_INTENT_KEY);
     if (intent === 'sync' || intent === 'restore') return intent;
     return null;
   } catch {
     return null;
   }
+}
+
+/** Read and clear the intent stored when the magic link was sent (fallback if redirect params are stripped). */
+export function consumeMagicLinkIntent(): MagicLinkIntent | null {
+  try {
+    const intent = peekMagicLinkIntent();
+    sessionStorage.removeItem(MAGIC_LINK_INTENT_KEY);
+    return intent;
+  } catch {
+    return null;
+  }
+}
+
+/** Supabase PKCE / implicit callback — intent query params are often stripped on mobile mail clients. */
+export function isMagicLinkAuthCallback(): boolean {
+  const search = new URLSearchParams(window.location.search);
+  if (search.has('code')) return true;
+  const hash = window.location.hash.replace(/^#/, '');
+  if (!hash) return false;
+  const hashParams = new URLSearchParams(hash);
+  return hashParams.has('access_token') || hashParams.has('type');
 }
 
 function normalizeEmail(email: string): string {
@@ -201,6 +221,14 @@ export async function sendAccountSyncMagicLink(
   return { ok: true };
 }
 
+/** True when a fresh magic-link sign-in should unlock a prior Stripe purchase (not account sync). */
+export function shouldRestorePurchaseOnSignIn(): boolean {
+  const search = new URLSearchParams(window.location.search);
+  if (search.get('sync') === 'success') return false;
+  if (search.get('restore') === 'success') return true;
+  return peekMagicLinkIntent() === 'restore';
+}
+
 /** Resolve why the user returned from a magic link (URL param wins over sessionStorage). */
 export function resolveMagicLinkReturn(
   syncParam: string | null,
@@ -214,7 +242,16 @@ export function resolveMagicLinkReturn(
     consumeMagicLinkIntent();
     return 'restore';
   }
-  return consumeMagicLinkIntent();
+
+  const stored = consumeMagicLinkIntent();
+  if (stored) return stored;
+
+  // Mobile mail clients often drop ?sync=success but keep ?code= — always treat as profile sync.
+  if (isMagicLinkAuthCallback()) {
+    return 'sync';
+  }
+
+  return null;
 }
 
 /** Sign out of Supabase and clear local game access on this device. */

@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { BYPASS_PAYMENT, hasGameAccess, subscribeGameAccessUnlock } from '@/lib/gameAccess';
-import { signOutSession, syncGameAccessFromSupabase } from '@/lib/restorePurchase';
+import { signOutSession, shouldRestorePurchaseOnSignIn, syncGameAccessFromSupabase } from '@/lib/restorePurchase';
 
 type GameAccessContextValue = {
   /** False while checking Supabase for a cross-device purchase. */
@@ -84,8 +84,8 @@ export function GameAccessProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Purchase restore only on a fresh sign-in when this device is still locked — not on token refresh or account sync.
-      if (event === 'SIGNED_IN' && !BYPASS_PAYMENT && !hasGameAccess()) {
+      // Purchase restore only on explicit restore magic links — never on account sync sign-in.
+      if (event === 'SIGNED_IN' && !BYPASS_PAYMENT && !hasGameAccess() && shouldRestorePurchaseOnSignIn()) {
         void refreshAccess();
       }
     });

@@ -14,7 +14,7 @@ import {
 } from '@/lib/restorePurchase';
 import { REQUIRE_PROFILE_TO_PLAY } from '@/constants/profileGate';
 import { startKickOffCheckout } from '@/lib/stripeCheckout';
-import { Goal, Cloud, LogOut, User } from 'lucide-react';
+import { Goal, Cloud, User } from 'lucide-react';
 import { toast } from 'sonner';
 import fieldBackground from '@/assets/field-background.jpg';
 import worldCupTrophy from '@/assets/world_cup.webp';
@@ -47,12 +47,12 @@ const Home = () => {
 
     if (magicLinkIntent) {
       let cancelled = false;
-      const isSync = magicLinkIntent === 'sync';
+      const isRestore = magicLinkIntent === 'restore';
 
-      if (isSync) {
-        setSyncingAccount(true);
-      } else {
+      if (isRestore) {
         setRestoringAccess(true);
+      } else {
+        setSyncingAccount(true);
       }
 
       waitForAuthSession()
@@ -63,51 +63,44 @@ const Home = () => {
             return;
           }
 
-          if (isSync) {
-            if (!hasGameAccess()) {
-              await refreshAccess();
-            }
-            const result = await syncAccountWithCloud();
-            if (!result.ok) {
-              toast.error(result.error);
-              return;
-            }
-            toast.success('Account synced — your profile and scores are up to date.');
-            return;
-          }
-
-          if (!auth.email) {
-            toast.error('Sign-in did not complete. Open the magic link on this device and try again.');
-            return;
-          }
-
-          const verified = await syncGameAccessFromSupabase();
-          if (!verified) {
-            toast.error('No purchase found for this email. Use the same email from Stripe checkout.');
-            return;
-          }
-
-          await refreshAccess();
           const syncResult = await syncAccountWithCloud();
           if (!syncResult.ok) {
             toast.error(syncResult.error);
             return;
           }
-          toast.success('Purchase restored — welcome back!');
+
+          if (isRestore && !hasGameAccess()) {
+            if (!auth.email) {
+              toast.error('Sign-in did not complete. Open the magic link on this device and try again.');
+              return;
+            }
+
+            const verified = await syncGameAccessFromSupabase();
+            if (!verified) {
+              toast.error('No purchase found for this email. Use the same email from Stripe checkout.');
+              return;
+            }
+
+            await refreshAccess();
+            toast.success('Purchase restored — welcome back!');
+            return;
+          }
+
+          toast.success('Account synced — your profile and scores are up to date.');
         })
         .catch(() => {
           if (!cancelled) {
             toast.error(
-              isSync ? 'Could not sync your account. Please try again.' : 'Could not restore access. Please try again.',
+              isRestore ? 'Could not restore access. Please try again.' : 'Could not sync your account. Please try again.',
             );
           }
         })
         .finally(() => {
           if (!cancelled) {
-            if (isSync) {
-              setSyncingAccount(false);
-            } else {
+            if (isRestore) {
               setRestoringAccess(false);
+            } else {
+              setSyncingAccount(false);
             }
             setSearchParams({}, { replace: true });
           }
@@ -387,9 +380,8 @@ const Home = () => {
                 type="button"
                 onClick={() => void handleSignOut()}
                 disabled={signingOut || actionDisabled}
-                className="flex items-center gap-2 text-sm font-medium text-white/70 underline-offset-4 transition-colors hover:text-white/90 hover:underline disabled:opacity-50"
+                className="text-sm font-medium text-white/70 underline-offset-4 transition-colors hover:text-white/90 hover:underline disabled:opacity-50"
               >
-                <LogOut className="h-4 w-4" aria-hidden />
                 {signingOut ? 'Signing out…' : 'Log out'}
               </button>
             ) : (

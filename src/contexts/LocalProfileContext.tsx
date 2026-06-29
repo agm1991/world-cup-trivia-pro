@@ -287,21 +287,17 @@ export const LocalProfileProvider = ({ children }: { children: ReactNode }) => {
     await upsertCloudProfile(userId, payload);
   }, []);
 
-  const runCloudSync = useCallback(async (
-    userId: string,
-    options?: { isCancelled?: () => boolean },
-  ): Promise<boolean> => {
-    if (cloudSyncPromiseRef.current) {
+  const runCloudSync = useCallback(async (userId: string): Promise<boolean> => {
+    if (cloudSyncInFlightRef.current && cloudSyncPromiseRef.current) {
       return cloudSyncPromiseRef.current;
     }
 
     const syncTask = (async (): Promise<boolean> => {
       cloudSyncInFlightRef.current = true;
-      cloudInitialSyncDoneRef.current = null;
 
       try {
         const auth = await waitForAuthSession();
-        if (!auth || auth.userId !== userId || options?.isCancelled?.()) return false;
+        if (!auth || auth.userId !== userId) return false;
 
         const localPayload = buildLocalCloudPayload(
           readStoredProfile(),
@@ -310,7 +306,7 @@ export const LocalProfileProvider = ({ children }: { children: ReactNode }) => {
         );
 
         const merged = await syncProfileWithCloud(userId, localPayload);
-        if (!merged || options?.isCancelled?.()) return false;
+        if (!merged) return false;
 
         applyCloudPayloadToLocalStorage(merged);
         setProfile(readStoredProfile());
@@ -365,7 +361,7 @@ export const LocalProfileProvider = ({ children }: { children: ReactNode }) => {
     }, 1500);
   }, [authUser?.id, pushToCloud]);
 
-  // Pull from cloud on email login, merge with this device, then push merged snapshot back.
+  // Pull from cloud when auth session becomes available (magic link or returning visitor).
   useEffect(() => {
     const userId = authUser?.id;
     if (!userId) {
@@ -373,12 +369,7 @@ export const LocalProfileProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    let cancelled = false;
-    void runCloudSync(userId, { isCancelled: () => cancelled });
-
-    return () => {
-      cancelled = true;
-    };
+    void runCloudSync(userId);
   }, [authUser?.id, runCloudSync]);
 
   // Magic-link sign-in: sync immediately on SIGNED_IN before authUser state may settle.

@@ -273,7 +273,12 @@ export function applyCloudPayloadToLocalStorage(payload: CloudProfilePayload): v
   applyFastestTimerData(payload.fastestTimerRunSec, payload.fastestTimerByCategory);
 }
 
-export async function fetchCloudProfile(userId: string): Promise<CloudProfilePayload | null> {
+export type FetchCloudProfileResult =
+  | { status: 'found'; payload: CloudProfilePayload }
+  | { status: 'missing' }
+  | { status: 'error'; message: string };
+
+export async function fetchCloudProfile(userId: string): Promise<FetchCloudProfileResult> {
   const { data, error } = await supabase
     .from('profiles')
     .select(PROFILE_SELECT)
@@ -282,11 +287,11 @@ export async function fetchCloudProfile(userId: string): Promise<CloudProfilePay
 
   if (error) {
     console.error('Failed to fetch cloud profile:', error.message);
-    return null;
+    return { status: 'error', message: error.message };
   }
 
-  if (!data) return null;
-  return rowToPayload(data as CloudProfileRow);
+  if (!data) return { status: 'missing' };
+  return { status: 'found', payload: rowToPayload(data as CloudProfileRow) };
 }
 
 function profileToRowFields(profile: UserProfile | null) {
@@ -337,14 +342,20 @@ export async function syncProfileWithCloud(
   userId: string,
   local: CloudProfilePayload,
 ): Promise<CloudProfilePayload | null> {
-  const remote = await fetchCloudProfile(userId);
-  const localHasData = !isCloudPayloadEmpty(local);
-  const remoteHasData = remote ? !isCloudPayloadEmpty(remote) : false;
+  const remoteResult = await fetchCloudProfile(userId);
+  if (remoteResult.status === 'error') {
+    return null;
+  }
 
-  if (!remote) {
+  const localHasData = !isCloudPayloadEmpty(local);
+
+  if (remoteResult.status === 'missing') {
     const uploaded = await upsertCloudProfile(userId, local);
     return uploaded ? local : null;
   }
+
+  const remote = remoteResult.payload;
+  const remoteHasData = !isCloudPayloadEmpty(remote);
 
   // Empty cloud shell — push local progress/profile instead of merging zeros over local data.
   if (!remoteHasData && localHasData) {
