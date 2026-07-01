@@ -2,8 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CategoryCard } from '@/components/CategoryCard';
 import { Navigation } from '@/components/Navigation';
-import { useLocalProfile } from '@/contexts/LocalProfileContext';
-import { hasGameAccess } from '@/lib/gameAccess';
+import { hasSavedProfile, useLocalProfile } from '@/contexts/LocalProfileContext';
 import { REQUIRE_PROFILE_TO_PLAY } from '@/constants/profileGate';
 import { CATEGORIES_PAGE_DISPLAY_ITEMS, navigateCategoryItem } from '@/lib/categoryNavigation';
 
@@ -13,11 +12,7 @@ const Categories = () => {
   const cards = CATEGORIES_PAGE_DISPLAY_ITEMS;
 
   useEffect(() => {
-    if (!hasGameAccess()) {
-      navigate('/', { replace: true });
-      return;
-    }
-    if (REQUIRE_PROFILE_TO_PLAY && (!profile?.name?.trim() || !profile?.country)) {
+    if (REQUIRE_PROFILE_TO_PLAY && !hasSavedProfile(profile)) {
       navigate('/create-profile', { replace: true });
     }
   }, [navigate, profile]);

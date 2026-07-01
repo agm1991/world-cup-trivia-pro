@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Search, Trophy } from 'lucide-react';
+import { ArrowLeft, Lock, Search, Trophy } from 'lucide-react';
 import { Navigation } from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,9 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useLocalProfile } from '@/contexts/LocalProfileContext';
+import { hasSavedProfile, isProfileComplete, useLocalProfile } from '@/contexts/LocalProfileContext';
 import { useToast } from '@/hooks/use-toast';
-import { hasGameAccess } from '@/lib/gameAccess';
 import { WorldCountryFlag } from '@/components/WorldCountrySelect';
 import { worldProfileCountries } from '@/data/worldProfileCountries';
 
@@ -25,7 +24,9 @@ const CreateProfile = () => {
   const location = useLocation();
   const returnTo = (location.state as { returnTo?: string } | null)?.returnTo ?? '/';
   const { toast } = useToast();
-  const { createProfile } = useLocalProfile();
+  const { profile, createProfile } = useLocalProfile();
+  const profileLocked = hasSavedProfile(profile);
+  const profileComplete = isProfileComplete(profile);
 
   const [displayName, setDisplayName] = useState('');
   const [gender, setGender] = useState('');
@@ -33,18 +34,16 @@ const CreateProfile = () => {
   const [country, setCountry] = useState('');
   const [countrySearch, setCountrySearch] = useState('');
 
-  useEffect(() => {
-    if (!hasGameAccess()) {
-      navigate('/', { replace: true });
-    }
-  }, [navigate]);
-
   const filteredCountries = worldProfileCountries.filter((c) =>
     c.name.toLowerCase().includes(countrySearch.toLowerCase()),
   );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (profileLocked) {
+      return;
+    }
 
     const trimmedName = displayName.trim();
     const parsedAge = parseInt(age, 10);
@@ -65,13 +64,79 @@ const CreateProfile = () => {
       return;
     }
 
-    createProfile(trimmedName, country, gender, parsedAge);
+    const saved = createProfile(trimmedName, country, gender, parsedAge);
+    if (!saved) {
+      toast({
+        title: 'Profile already saved',
+        description: 'Your profile is permanent and cannot be changed.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     toast({
       title: 'Profile saved',
-      description: 'Your profile has been recorded.',
+      description: 'Your profile has been recorded permanently.',
     });
     navigate('/');
   };
+
+  if (profileLocked && profile) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+
+        <div className="max-w-lg mx-auto px-4 py-8">
+          <Button variant="outline" size="icon" onClick={() => navigate(returnTo)} className="mb-6">
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+
+          <div className="mb-8 text-center">
+            <Trophy className="w-6 h-6 text-amber-400 mx-auto mb-2" aria-hidden />
+            <h1 className="text-4xl md:text-5xl font-black uppercase tracking-[0.12em] bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 bg-clip-text text-transparent">
+              Your profile
+            </h1>
+            <p className="text-muted-foreground text-base sm:text-lg mt-2">
+              Saved on this device. Your identity cannot be edited or deleted.
+            </p>
+          </div>
+
+          <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm">
+            <div className="flex items-center gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-sm text-amber-100/90">
+              <Lock className="h-4 w-4 shrink-0 text-amber-300" aria-hidden />
+              <span>Profile is permanent after creation.</span>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Name</p>
+              <p className="text-lg font-bold text-foreground">{profile.name}</p>
+            </div>
+
+            {profileComplete && (
+              <>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gender</p>
+                  <p className="text-lg font-medium text-foreground">{profile.gender}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Age</p>
+                  <p className="text-lg font-medium text-foreground">{profile.age}</p>
+                </div>
+              </>
+            )}
+
+            <div className="space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Country</p>
+              <div className="flex items-center gap-2">
+                <WorldCountryFlag name={profile.country} className="h-5 w-7" />
+                <p className="text-lg font-medium text-foreground">{profile.country}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -88,7 +153,7 @@ const CreateProfile = () => {
             Create your profile
           </h1>
           <p className="text-muted-foreground text-base sm:text-lg mt-2">
-            Choose any country in the world you want to represent.
+            Choose any country in the world you want to represent. This cannot be changed later.
           </p>
         </div>
 
@@ -179,7 +244,7 @@ const CreateProfile = () => {
           </div>
 
           <Button type="submit" className="w-full font-bold">
-            Save profile
+            Save profile permanently
           </Button>
         </form>
       </div>

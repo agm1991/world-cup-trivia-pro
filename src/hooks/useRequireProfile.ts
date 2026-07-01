@@ -1,4 +1,4 @@
-import { useLocalProfile } from '@/contexts/LocalProfileContext';
+import { useLocalProfile, hasSavedProfile } from '@/contexts/LocalProfileContext';
 import { REQUIRE_PROFILE_TO_PLAY } from '@/constants/profileGate';
 
 /** Re-export for screens that gated on compile-time toggle (often `false`). */
@@ -18,5 +18,5 @@ export const useRequireProfile = (): RequireProfileStatus => {
   const { profile, isProfileHydrated: hydratedFlag } = useLocalProfile();
   const isProfileHydrated = hydratedFlag ?? true;
 
-  return { isProfileHydrated, hasProfile: !REQUIRE_PROFILE_TO_PLAY || !!profile };
+  return { isProfileHydrated, hasProfile: !REQUIRE_PROFILE_TO_PLAY || hasSavedProfile(profile) };
 };

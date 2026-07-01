@@ -3,9 +3,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LocalProfileProvider } from "@/contexts/LocalProfileContext";
-import { GameAccessProvider, useGameAccess } from "@/contexts/GameAccessContext";
 import Home from "./pages/Home";
 import Categories from "./pages/Categories";
 import CategoryLevels from "./pages/CategoryLevels";
@@ -50,96 +49,73 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-/** Blocks every child route until payment is verified on this device or via Supabase restore. */
-function RequirePayment() {
-  const { ready, hasAccess } = useGameAccess();
-
-  if (!ready) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">
-        Checking access…
-      </div>
-    );
-  }
-
-  if (!hasAccess) {
-    return <Navigate to="/" replace />;
-  }
-
-  return <Outlet />;
-}
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <GameAccessProvider>
-        <LocalProfileProvider>
+      <LocalProfileProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
           <Routes>
             <Route path="/" element={<Home />} />
-
-            <Route element={<RequirePayment />}>
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/create-profile" element={<CreateProfile />} />
-              <Route path="/categories" element={<Categories />} />
-              <Route path="/levels/:category" element={<CategoryLevels />} />
-              <Route path="/world-cup" element={<Navigate to="/levels/world-cup" replace />} />
-              <Route path="/guess-who" element={<Navigate to="/levels/guess-who" replace />} />
-              <Route path="/players" element={<Navigate to="/levels/player" replace />} />
-              <Route path="/winners" element={<Navigate to="/world-cup-winners" replace />} />
-              <Route path="/levels/player" element={<PlayerLevels />} />
-              <Route path="/levels/player/:country" element={<PlayerCountryPlayers />} />
-              <Route path="/player-levels/:playerId" element={<PlayerLevelSelection />} />
-              <Route path="/player-kickoff/:playerId/:level" element={<PlayerKickOff />} />
-              <Route path="/player-game/:playerId/:level" element={<PlayerGame />} />
-              <Route path="/level/:category/:level" element={<LevelIntro />} />
-              <Route path="/game/:category" element={<Game />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/menu" element={<Menu />} />
-              <Route path="/country-history/:countryCode" element={<CountryHistoryYears />} />
-              <Route path="/country-history" element={<CountryHistory />} />
-              <Route path="/country-game/:countryCode/:year" element={<CountryGame />} />
-              <Route path="/world-cup-winners" element={<WorldCupWinners />} />
-              <Route path="/world-cup-winners/:country" element={<WorldCupWinnersCountry />} />
-              <Route path="/winners-game/:country/:year" element={<WinnersGame />} />
-              <Route path="/scoreline-by-year" element={<ScorelineByYear />} />
-              <Route path="/scoreline-game/:year" element={<ScorelineGame />} />
-              <Route path="/managers-select" element={<ManagersSelect />} />
-              <Route path="/managers-select/:country" element={<ManagersCountryManagers />} />
-              <Route path="/managers" element={<ManagersGame />} />
-              <Route path="/managers-game/:country/:manager" element={<ManagersGame />} />
-              <Route path="/stadiums" element={<Navigate to="/levels/stadiums" replace />} />
-              <Route path="/level/stadiums/:level" element={<StadiumsGame />} />
-              <Route path="/missing-player" element={<MissingPlayerLevels />} />
-              <Route
-                path="/missing-player/:level"
-                element={
-                  <Suspense
-                    fallback={
-                      <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">
-                        Loading level…
-                      </div>
-                    }
-                  >
-                    <MissingPlayerGame />
-                  </Suspense>
-                }
-              />
-              <Route path="/squad-puzzle/:playerId" element={<SquadPuzzleGame />} />
-              <Route path="/destiny" element={<DestinyRouteSelect />} />
-              <Route path="/destiny-route-select" element={<DestinyRouteSelect />} />
-              <Route path="/destiny-route-game" element={<DestinyRouteGame />} />
-              <Route path="/squad-predictor" element={<SquadPredictorLayout />}>
-                <Route index element={<SquadPredictorHubIndex />} />
-                <Route path="squad" element={<SquadPredictorSquadPage />} />
-                <Route path="tournament/knockouts" element={<SquadPredictorKnockoutRoadPage />} />
-                <Route path="tournament" element={<SquadPredictorTournamentPage />} />
-                <Route path="awards" element={<SquadPredictorAwardsPage />} />
-                <Route path="community" element={<SquadPredictorCommunityPage />} />
-                <Route path="*" element={<Navigate to="/squad-predictor/squad" replace />} />
-              </Route>
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/create-profile" element={<CreateProfile />} />
+            <Route path="/categories" element={<Categories />} />
+            <Route path="/levels/:category" element={<CategoryLevels />} />
+            <Route path="/world-cup" element={<Navigate to="/levels/world-cup" replace />} />
+            <Route path="/guess-who" element={<Navigate to="/levels/guess-who" replace />} />
+            <Route path="/players" element={<Navigate to="/levels/player" replace />} />
+            <Route path="/winners" element={<Navigate to="/world-cup-winners" replace />} />
+            <Route path="/levels/player" element={<PlayerLevels />} />
+            <Route path="/levels/player/:country" element={<PlayerCountryPlayers />} />
+            <Route path="/player-levels/:playerId" element={<PlayerLevelSelection />} />
+            <Route path="/player-kickoff/:playerId/:level" element={<PlayerKickOff />} />
+            <Route path="/player-game/:playerId/:level" element={<PlayerGame />} />
+            <Route path="/level/:category/:level" element={<LevelIntro />} />
+            <Route path="/game/:category" element={<Game />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/menu" element={<Menu />} />
+            <Route path="/country-history/:countryCode" element={<CountryHistoryYears />} />
+            <Route path="/country-history" element={<CountryHistory />} />
+            <Route path="/country-game/:countryCode/:year" element={<CountryGame />} />
+            <Route path="/world-cup-winners" element={<WorldCupWinners />} />
+            <Route path="/world-cup-winners/:country" element={<WorldCupWinnersCountry />} />
+            <Route path="/winners-game/:country/:year" element={<WinnersGame />} />
+            <Route path="/scoreline-by-year" element={<ScorelineByYear />} />
+            <Route path="/scoreline-game/:year" element={<ScorelineGame />} />
+            <Route path="/managers-select" element={<ManagersSelect />} />
+            <Route path="/managers-select/:country" element={<ManagersCountryManagers />} />
+            <Route path="/managers" element={<ManagersGame />} />
+            <Route path="/managers-game/:country/:manager" element={<ManagersGame />} />
+            <Route path="/stadiums" element={<Navigate to="/levels/stadiums" replace />} />
+            <Route path="/level/stadiums/:level" element={<StadiumsGame />} />
+            <Route path="/missing-player" element={<MissingPlayerLevels />} />
+            <Route
+              path="/missing-player/:level"
+              element={
+                <Suspense
+                  fallback={
+                    <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">
+                      Loading level…
+                    </div>
+                  }
+                >
+                  <MissingPlayerGame />
+                </Suspense>
+              }
+            />
+            <Route path="/squad-puzzle/:playerId" element={<SquadPuzzleGame />} />
+            <Route path="/destiny" element={<DestinyRouteSelect />} />
+            <Route path="/destiny-route-select" element={<DestinyRouteSelect />} />
+            <Route path="/destiny-route-game" element={<DestinyRouteGame />} />
+            <Route path="/squad-predictor" element={<SquadPredictorLayout />}>
+              <Route index element={<SquadPredictorHubIndex />} />
+              <Route path="squad" element={<SquadPredictorSquadPage />} />
+              <Route path="tournament/knockouts" element={<SquadPredictorKnockoutRoadPage />} />
+              <Route path="tournament" element={<SquadPredictorTournamentPage />} />
+              <Route path="awards" element={<SquadPredictorAwardsPage />} />
+              <Route path="community" element={<SquadPredictorCommunityPage />} />
+              <Route path="*" element={<Navigate to="/squad-predictor/squad" replace />} />
             </Route>
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
@@ -147,7 +123,6 @@ const App = () => (
           </Routes>
         </BrowserRouter>
         </LocalProfileProvider>
-      </GameAccessProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

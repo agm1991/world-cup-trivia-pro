@@ -27,9 +27,8 @@ import {
   Sparkles,
   Clock,
 } from 'lucide-react';
-import { useLocalProfile } from '@/contexts/LocalProfileContext';
-import { useGameAccess } from '@/contexts/GameAccessContext';
-import { hasGameAccess } from '@/lib/gameAccess';
+import { hasSavedProfile, useLocalProfile } from '@/contexts/LocalProfileContext';
+import { REQUIRE_PROFILE_TO_PLAY } from '@/constants/profileGate';
 import { CATEGORIES_PAGE_DISPLAY_ITEMS } from '@/lib/categoryNavigation';
 import { cn } from '@/lib/utils';
 import { allPlayers } from '@/data/playerQuestions';
@@ -70,9 +69,8 @@ const Profile = () => {
     refreshGameStatsFromStorage,
     recentCompletions,
     refreshRecentCompletionsFromStorage,
-    isCloudSyncEnabled,
+    profile,
   } = useLocalProfile();
-  const { authUser } = useGameAccess();
   const [openCategories, setOpenCategories] = useState<Set<string>>(() => new Set());
 
   const totalStats = getTotalStats();
@@ -83,15 +81,13 @@ const Profile = () => {
       : 0;
 
   useEffect(() => {
-    if (!hasGameAccess()) {
-      navigate('/', { replace: true });
+    if (REQUIRE_PROFILE_TO_PLAY && !hasSavedProfile(profile)) {
+      navigate('/create-profile', { replace: true });
+      return;
     }
-  }, [navigate]);
-
-  useEffect(() => {
     refreshGameStatsFromStorage();
     refreshRecentCompletionsFromStorage();
-  }, [refreshGameStatsFromStorage, refreshRecentCompletionsFromStorage, location.key]);
+  }, [navigate, profile, refreshGameStatsFromStorage, refreshRecentCompletionsFromStorage, location.key]);
 
   const categoryRows = useMemo(() => {
     return CATEGORIES_PAGE_DISPLAY_ITEMS.filter(
@@ -236,9 +232,7 @@ const Profile = () => {
                 Stats
               </h1>
               <p className="text-muted-foreground text-base sm:text-lg mt-2">
-                {isCloudSyncEnabled
-                  ? `Synced to your account (${authUser?.email ?? 'signed in'}). Progress follows you on every device.`
-                  : 'Sign in with your email (Menu → Restore purchase) to sync scores, coins, and progress across devices.'}
+                Your scores, coins, and progress on this device.
               </p>
             </div>
             <div className="w-10 shrink-0" aria-hidden />

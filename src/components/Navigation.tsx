@@ -1,8 +1,6 @@
-import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { BarChart3, LineChart, Loader2, LogOut, Menu as MenuIcon, Trophy, User } from 'lucide-react';
-import { isProfileComplete, useLocalProfile } from '@/contexts/LocalProfileContext';
-import { useGameAccess } from '@/contexts/GameAccessContext';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { BarChart3, LineChart, Menu as MenuIcon, Trophy, User } from 'lucide-react';
+import { isProfileComplete, hasSavedProfile, useLocalProfile } from '@/contexts/LocalProfileContext';
 import { HeaderTopStats } from '@/components/Header';
 import {
   DropdownMenu,
@@ -15,7 +13,6 @@ import { ProfileModal } from '@/components/ProfileModal';
 import { WorldCountryFlag } from '@/components/WorldCountrySelect';
 import { GUEST_PROFILE_NAME } from '@/constants/profileGate';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 
 interface NavigationProps {
   transparent?: boolean;
@@ -25,32 +22,8 @@ export const Navigation = ({ transparent = false }: NavigationProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { profile, showProfileModal, setShowProfileModal } = useLocalProfile();
-  const { authUser, signOut } = useGameAccess();
-  const [signingOut, setSigningOut] = useState(false);
+  const profileLocked = hasSavedProfile(profile);
   const showNamedProfile = isProfileComplete(profile) && location.pathname !== '/';
-  const isLoggedIn = Boolean(authUser);
-
-  const handleSignOut = async () => {
-    if (signingOut) return;
-    setSigningOut(true);
-    const toastId = toast.loading('Signing out…');
-
-    try {
-      const result = await signOut();
-      if (!result.ok) {
-        toast.error(result.error, { id: toastId });
-        return;
-      }
-      toast.success('Signed out. You can log in again anytime.', { id: toastId });
-      if (location.pathname !== '/') {
-        navigate('/');
-      }
-    } catch {
-      toast.error('Could not sign out. Please try again.', { id: toastId });
-    } finally {
-      setSigningOut(false);
-    }
-  };
 
   const navClasses = transparent
     ? 'relative z-50 bg-background/20 backdrop-blur-xl border-b border-foreground/10'
@@ -161,7 +134,7 @@ export const Navigation = ({ transparent = false }: NavigationProps) => {
                     className="gap-2 cursor-pointer py-2.5 px-3"
                   >
                     <User className="w-4 h-4 text-primary shrink-0" />
-                    Profile
+                    {profileLocked ? 'My profile' : 'Create profile'}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => navigate('/profile')}
@@ -178,23 +151,6 @@ export const Navigation = ({ transparent = false }: NavigationProps) => {
                     <BarChart3 className="w-4 h-4 text-primary shrink-0" />
                     Leaderboard
                   </DropdownMenuItem>
-                  {isLoggedIn ? (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => void handleSignOut()}
-                        disabled={signingOut}
-                        className="gap-2 cursor-pointer py-2.5 px-3 text-destructive focus:text-destructive"
-                      >
-                        {signingOut ? (
-                          <Loader2 className="w-4 h-4 shrink-0 animate-spin" />
-                        ) : (
-                          <LogOut className="w-4 h-4 shrink-0" />
-                        )}
-                        Log Out
-                      </DropdownMenuItem>
-                    </>
-                  ) : null}
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : null}
@@ -206,28 +162,6 @@ export const Navigation = ({ transparent = false }: NavigationProps) => {
                 '[@media(orientation:landscape)_and_(max-height:500px)]:scale-[0.88]',
               )}
             />
-
-            {isLoggedIn ? (
-              <button
-                type="button"
-                onClick={() => void handleSignOut()}
-                disabled={signingOut}
-                className={cn(
-                  menuButtonClass,
-                  'px-2 sm:px-3',
-                  location.pathname === '/' ? 'hidden sm:flex' : '',
-                  '[@media(orientation:landscape)_and_(max-height:500px)]:hidden',
-                )}
-                aria-label="Log out"
-              >
-                {signingOut ? (
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                ) : (
-                  <LogOut className="h-4 w-4" aria-hidden />
-                )}
-                <span className="hidden sm:inline">Log Out</span>
-              </button>
-            ) : null}
 
             <button
               type="button"

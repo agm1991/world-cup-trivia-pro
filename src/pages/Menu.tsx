@@ -1,79 +1,56 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   BarChart3,
   ChevronRight,
   LineChart,
-  Loader2,
-  LogOut,
   Trophy,
   User,
 } from 'lucide-react';
 import { Navigation } from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
-import { useGameAccess } from '@/contexts/GameAccessContext';
+import { hasSavedProfile, useLocalProfile } from '@/contexts/LocalProfileContext';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
-
-const MENU_ITEMS = [
-  {
-    label: 'Profile',
-    description: 'Set your name & country',
-    path: '/create-profile',
-    icon: User,
-    accent: 'from-sky-500/20 via-sky-950/25 to-card/90 border-sky-500/30',
-    iconBg: 'from-sky-400/20 to-sky-600/10 border-sky-400/25',
-    iconClass: 'text-sky-300',
-    hoverGlow: 'group-hover:shadow-[0_16px_48px_-12px_hsl(198_93%_60%/0.4)]',
-  },
-  {
-    label: 'Stats',
-    description: 'Scores, coins & progress',
-    path: '/profile',
-    icon: LineChart,
-    accent: 'from-amber-500/25 via-amber-950/30 to-card/90 border-amber-500/35',
-    iconBg: 'from-amber-400/25 to-amber-600/10 border-amber-400/30',
-    iconClass: 'text-amber-300',
-    hoverGlow: 'group-hover:shadow-[0_16px_48px_-12px_hsl(45_93%_50%/0.45)]',
-  },
-  {
-    label: 'Leaderboard',
-    description: 'Worldwide challenge',
-    path: '/leaderboard',
-    icon: BarChart3,
-    accent: 'from-emerald-500/20 via-emerald-950/25 to-card/90 border-emerald-500/30',
-    iconBg: 'from-emerald-400/20 to-emerald-600/10 border-emerald-400/25',
-    iconClass: 'text-emerald-300',
-    hoverGlow: 'group-hover:shadow-[0_16px_48px_-12px_hsl(160_84%_45%/0.4)]',
-  },
-] as const;
 
 const Menu = () => {
   const navigate = useNavigate();
-  const { authUser, signOut } = useGameAccess();
-  const [signingOut, setSigningOut] = useState(false);
-  const isLoggedIn = Boolean(authUser);
+  const { profile } = useLocalProfile();
+  const profileLocked = hasSavedProfile(profile);
 
-  const handleSignOut = async () => {
-    if (signingOut) return;
-    setSigningOut(true);
-    const toastId = toast.loading('Signing out…');
-
-    try {
-      const result = await signOut();
-      if (!result.ok) {
-        toast.error(result.error, { id: toastId });
-        return;
-      }
-      toast.success('Signed out. You can log in again anytime.', { id: toastId });
-      navigate('/');
-    } catch {
-      toast.error('Could not sign out. Please try again.', { id: toastId });
-    } finally {
-      setSigningOut(false);
-    }
-  };
+  const menuItems = [
+    {
+      label: profileLocked ? 'My profile' : 'Create profile',
+      description: profileLocked
+        ? 'View your permanent player identity'
+        : 'Set up your name & country once',
+      path: '/create-profile',
+      icon: User,
+      accent: 'from-sky-500/20 via-sky-950/25 to-card/90 border-sky-500/30',
+      iconBg: 'from-sky-400/20 to-sky-600/10 border-sky-400/25',
+      iconClass: 'text-sky-300',
+      hoverGlow: 'group-hover:shadow-[0_16px_48px_-12px_hsl(198_93%_60%/0.4)]',
+    },
+    {
+      label: 'Stats',
+      description: 'Scores, coins & progress',
+      path: '/profile',
+      icon: LineChart,
+      accent: 'from-amber-500/25 via-amber-950/30 to-card/90 border-amber-500/35',
+      iconBg: 'from-amber-400/25 to-amber-600/10 border-amber-400/30',
+      iconClass: 'text-amber-300',
+      hoverGlow: 'group-hover:shadow-[0_16px_48px_-12px_hsl(45_93%_50%/0.45)]',
+    },
+    {
+      label: 'Leaderboard',
+      description: 'Worldwide challenge',
+      path: '/leaderboard',
+      icon: BarChart3,
+      accent: 'from-emerald-500/20 via-emerald-950/25 to-card/90 border-emerald-500/30',
+      iconBg: 'from-emerald-400/20 to-emerald-600/10 border-emerald-400/25',
+      iconClass: 'text-emerald-300',
+      hoverGlow: 'group-hover:shadow-[0_16px_48px_-12px_hsl(160_84%_45%/0.4)]',
+    },
+  ] as const;
 
   return (
     <div className="min-h-screen bg-background">
@@ -95,7 +72,6 @@ const Menu = () => {
         </div>
 
         <div className="relative mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-5 sm:px-6 md:py-6 lg:max-w-5xl">
-          {/* Header — same rhythm as category level pages */}
           <div className="mb-5 flex shrink-0 items-center gap-4 md:mb-6">
             <Button
               variant="outline"
@@ -125,7 +101,7 @@ const Menu = () => {
 
             <div className="flex min-h-0 flex-1 flex-col p-4 sm:p-5 md:p-6">
               <div className="flex min-h-0 flex-1 flex-col gap-3 sm:gap-4">
-                {MENU_ITEMS.map(({ label, description, path, icon: Icon, accent, iconBg, iconClass, hoverGlow }, index) => (
+                {menuItems.map(({ label, description, path, icon: Icon, accent, iconBg, iconClass, hoverGlow }, index) => (
                   <button
                     key={label}
                     type="button"
@@ -188,24 +164,6 @@ const Menu = () => {
                   World Cup Quiz
                 </span>
               </div>
-
-              {isLoggedIn ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-full sm:w-auto border-destructive/40 text-destructive hover:bg-destructive/10"
-                  onClick={() => void handleSignOut()}
-                  disabled={signingOut}
-                >
-                  {signingOut ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-                  ) : (
-                    <LogOut className="mr-2 h-4 w-4" aria-hidden />
-                  )}
-                  Log Out
-                </Button>
-              ) : null}
             </div>
           </div>
         </div>

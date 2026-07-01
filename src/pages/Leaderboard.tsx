@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Trophy, Zap, BarChart3, Goal, Globe, RefreshCw, LayoutGrid } from 'lucide-react';
-import { useLocalProfile } from '@/contexts/LocalProfileContext';
+import { hasSavedProfile, useLocalProfile } from '@/contexts/LocalProfileContext';
 import {
   formatTime,
   getCountryActivityFromEntries,
@@ -29,7 +29,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Navigation } from '@/components/Navigation';
-import { hasGameAccess } from '@/lib/gameAccess';
 import { WhatsNextSection } from '@/components/WhatsNextSection';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
@@ -66,11 +65,7 @@ const Leaderboard = () => {
   const totalStats = getTotalStats();
 
   useEffect(() => {
-    if (!hasGameAccess()) {
-      navigate('/', { replace: true });
-      return;
-    }
-    if (!profile?.name?.trim() || !profile?.country) {
+    if (!hasSavedProfile(profile)) {
       navigate('/create-profile', { replace: true });
     }
   }, [navigate, profile]);

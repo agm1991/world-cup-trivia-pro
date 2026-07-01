@@ -1,11 +1,7 @@
-/** Screenshot mode — set back to true when done, then redeploy. */
-export const REQUIRE_PROFILE_TO_PLAY = false;
+export const REQUIRE_PROFILE_TO_PLAY = true;
 
-/**
- * When true and no profile exists in storage, a minimal guest profile is created
- * automatically so the app never prompts for name/country (temporary QA / review mode).
- */
-export const AUTO_GUEST_PROFILE = true;
+/** When true, a guest profile is auto-created — disabled so players must sign up first. */
+export const AUTO_GUEST_PROFILE = false;
 
 export const GUEST_PROFILE_NAME = 'Guest';
 export const GUEST_PROFILE_COUNTRY = 'Brazil';

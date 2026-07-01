@@ -1,20 +1,9 @@
-import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Navigation } from '@/components/Navigation';
 import { ProfileModal } from '@/components/ProfileModal';
-import { RestorePurchaseModal } from '@/components/RestorePurchaseModal';
-import { isProfileComplete, useLocalProfile } from '@/contexts/LocalProfileContext';
-import { useGameAccess } from '@/contexts/GameAccessContext';
-import { confirmPaidCheckout, hasGameAccess } from '@/lib/gameAccess';
-import {
-  resolveMagicLinkReturn,
-  syncGameAccessFromSupabase,
-  waitForAuthSession,
-} from '@/lib/restorePurchase';
-import { REQUIRE_PROFILE_TO_PLAY } from '@/constants/profileGate';
-import { startKickOffCheckout } from '@/lib/stripeCheckout';
-import { Goal, Cloud, User } from 'lucide-react';
+import { isProfileComplete, hasSavedProfile, useLocalProfile } from '@/contexts/LocalProfileContext';
+import { Goal, User } from 'lucide-react';
 import { toast } from 'sonner';
 import fieldBackground from '@/assets/field-background.jpg';
 import worldCupTrophy from '@/assets/world_cup.webp';
@@ -22,155 +11,13 @@ import { WorldCountryFlag } from '@/components/WorldCountrySelect';
 
 const Home = () => {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { profile, showProfileModal, setShowProfileModal, syncAccountWithCloud } = useLocalProfile();
+  const { profile, showProfileModal, setShowProfileModal } = useLocalProfile();
+  const hasSavedProfileFlag = hasSavedProfile(profile);
   const profileComplete = isProfileComplete(profile);
-  const hasSavedProfile = Boolean(profile?.name?.trim() && profile?.country);
-  const showProfileCard = Boolean(profile?.name?.trim() && profile?.country);
-  const { hasAccess, refreshAccess, authUser, signOut } = useGameAccess();
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [verifyingPayment, setVerifyingPayment] = useState(false);
-  const [restoringAccess, setRestoringAccess] = useState(false);
-  const [syncingAccount, setSyncingAccount] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
-  const [restoreModalOpen, setRestoreModalOpen] = useState(false);
-  const [syncModalOpen, setSyncModalOpen] = useState(false);
-  const paid = hasAccess || hasGameAccess();
-  const isLoggedIn = Boolean(authUser);
+  const showProfileCard = hasSavedProfileFlag;
 
-  useEffect(() => {
-    const checkout = searchParams.get('checkout');
-    const sessionId = searchParams.get('session_id');
-    const restore = searchParams.get('restore');
-    const sync = searchParams.get('sync');
-    const magicLinkIntent = resolveMagicLinkReturn(sync, restore);
-
-    if (magicLinkIntent) {
-      let cancelled = false;
-      const isRestore = magicLinkIntent === 'restore';
-
-      if (isRestore) {
-        setRestoringAccess(true);
-      } else {
-        setSyncingAccount(true);
-      }
-
-      waitForAuthSession()
-        .then(async (auth) => {
-          if (cancelled) return;
-          if (!auth) {
-            toast.error('Sign-in did not complete. Open the magic link on this device and try again.');
-            return;
-          }
-
-          const syncResult = await syncAccountWithCloud();
-          if (!syncResult.ok) {
-            toast.error(syncResult.error);
-            return;
-          }
-
-          if (isRestore && !hasGameAccess()) {
-            if (!auth.email) {
-              toast.error('Sign-in did not complete. Open the magic link on this device and try again.');
-              return;
-            }
-
-            const verified = await syncGameAccessFromSupabase();
-            if (!verified) {
-              toast.error('No purchase found for this email. Use the same email from Stripe checkout.');
-              return;
-            }
-
-            await refreshAccess();
-            toast.success('Purchase restored — welcome back!');
-            return;
-          }
-
-          toast.success('Account synced — your profile and scores are up to date.');
-        })
-        .catch(() => {
-          if (!cancelled) {
-            toast.error(
-              isRestore ? 'Could not restore access. Please try again.' : 'Could not sync your account. Please try again.',
-            );
-          }
-        })
-        .finally(() => {
-          if (!cancelled) {
-            if (isRestore) {
-              setRestoringAccess(false);
-            } else {
-              setSyncingAccount(false);
-            }
-            setSearchParams({}, { replace: true });
-          }
-        });
-
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    if (checkout !== 'success') {
-      if (checkout === 'cancelled') {
-        setSearchParams({}, { replace: true });
-        toast.message('Payment cancelled — tap KICK OFF when you are ready.');
-      }
-      return;
-    }
-
-    if (!sessionId) {
-      setSearchParams({}, { replace: true });
-      toast.error('Payment could not be verified. Please try again.');
-      return;
-    }
-
-    let cancelled = false;
-    setVerifyingPayment(true);
-
-    confirmPaidCheckout(sessionId)
-      .then(async (verified) => {
-        if (cancelled) return;
-        if (verified) {
-          await refreshAccess();
-          toast.success('Payment successful — create your profile to play.');
-        } else {
-          toast.error('Payment was not completed. Please try again.');
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          toast.error('Could not verify payment. Please try again.');
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setVerifyingPayment(false);
-          setSearchParams({}, { replace: true });
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [searchParams, setSearchParams, refreshAccess, syncAccountWithCloud]);
-
-  const startCheckout = () => {
-    setCheckoutLoading(true);
-    startKickOffCheckout().catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : 'Could not start checkout.';
-      toast.error(message);
-      setCheckoutLoading(false);
-    });
-  };
-
-  const handleKickOff = () => {
-    if (!hasGameAccess()) {
-      startCheckout();
-      return;
-    }
-
-    if (REQUIRE_PROFILE_TO_PLAY && !hasSavedProfile) {
+  const handlePlay = () => {
+    if (!hasSavedProfileFlag) {
       toast.message('Create your profile before you play.');
       navigate('/create-profile');
       return;
@@ -180,31 +27,13 @@ const Home = () => {
   };
 
   const handleMyStats = () => {
-    if (!hasGameAccess()) {
-      toast.message('Pay £1 to unlock stats and leaderboards.');
-      startCheckout();
+    if (!hasSavedProfileFlag) {
+      toast.message('Create your profile first.');
+      navigate('/create-profile');
       return;
     }
+
     navigate('/profile');
-  };
-
-  const handleSignOut = async () => {
-    if (signingOut) return;
-    setSigningOut(true);
-    const toastId = toast.loading('Signing out…');
-
-    try {
-      const result = await signOut();
-      if (!result.ok) {
-        toast.error(result.error, { id: toastId });
-        return;
-      }
-      toast.success('Signed out.', { id: toastId });
-    } catch {
-      toast.error('Could not sign out. Please try again.', { id: toastId });
-    } finally {
-      setSigningOut(false);
-    }
   };
 
   const confettiColors = ['hsl(45 93% 47%)', 'hsl(0 0% 100%)', 'hsl(45 100% 60%)', 'hsl(190 95% 45%)'];
@@ -216,20 +45,6 @@ const Home = () => {
     color: confettiColors[i % confettiColors.length],
     size: `${4 + Math.random() * 6}px`,
   }));
-
-  const kickOffLabel = verifyingPayment
-    ? 'Verifying payment…'
-    : syncingAccount
-      ? 'Syncing account…'
-      : restoringAccess
-        ? 'Restoring access…'
-        : checkoutLoading
-          ? 'Opening checkout…'
-          : paid
-            ? 'PLAY'
-            : 'KICK OFF (£1)';
-
-  const actionDisabled = checkoutLoading || verifyingPayment || restoringAccess || syncingAccount;
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-background">
@@ -357,11 +172,10 @@ const Home = () => {
               <Button
                 size="lg"
                 className="golden-glow w-full sm:w-auto text-xl md:text-2xl px-12 py-8 bg-gradient-gold hover:bg-gradient-gold border-2 border-primary-glow shadow-gold font-bold transition-transform duration-300 hover:scale-105 hover:animate-pulse gap-3"
-                onClick={handleKickOff}
-                disabled={actionDisabled}
+                onClick={handlePlay}
               >
                 <Goal className="w-7 h-7" />
-                {kickOffLabel}
+                PLAY
               </Button>
 
               <Button
@@ -369,45 +183,12 @@ const Home = () => {
                 variant="outline"
                 className="w-full sm:w-auto text-xl md:text-2xl px-12 py-8 border-2 border-amber-400/70 text-amber-300 hover:bg-amber-500/10 hover:border-amber-300 font-bold backdrop-blur-sm bg-background/20"
                 onClick={handleMyStats}
-                disabled={actionDisabled}
               >
                 MY STATS
               </Button>
             </div>
 
-            {isLoggedIn ? (
-              <button
-                type="button"
-                onClick={() => void handleSignOut()}
-                disabled={signingOut || actionDisabled}
-                className="text-sm font-medium text-white/70 underline-offset-4 transition-colors hover:text-white/90 hover:underline disabled:opacity-50"
-              >
-                {signingOut ? 'Signing out…' : 'Log out'}
-              </button>
-            ) : (
-              <Button
-                size="lg"
-                className="w-full max-w-lg text-xl md:text-2xl px-12 py-8 border-2 border-sky-400/80 bg-gradient-to-r from-sky-600/90 via-sky-500/90 to-cyan-500/90 text-white font-black uppercase tracking-wide shadow-[0_0_32px_hsl(198_93%_50%/0.45)] transition-transform duration-300 hover:scale-[1.02] hover:from-sky-500 hover:via-sky-400 hover:to-cyan-400 gap-3"
-                onClick={() => setSyncModalOpen(true)}
-                disabled={actionDisabled}
-              >
-                <Cloud className="w-7 h-7" />
-                SYNC ACCOUNT
-              </Button>
-            )}
-
-            {!paid && (
-              <button
-                type="button"
-                onClick={() => setRestoreModalOpen(true)}
-                disabled={actionDisabled}
-                className="text-sm font-semibold text-amber-300/90 underline-offset-4 transition-colors hover:text-amber-200 hover:underline disabled:opacity-50"
-              >
-                Log In / Restore
-              </button>
-            )}
-
-            {paid && REQUIRE_PROFILE_TO_PLAY && !hasSavedProfile && (
+            {!hasSavedProfileFlag && (
               <button
                 type="button"
                 onClick={() => navigate('/create-profile')}
@@ -426,8 +207,6 @@ const Home = () => {
       </div>
 
       <ProfileModal open={showProfileModal} onOpenChange={setShowProfileModal} />
-      <RestorePurchaseModal open={restoreModalOpen} onOpenChange={setRestoreModalOpen} />
-      <RestorePurchaseModal open={syncModalOpen} onOpenChange={setSyncModalOpen} variant="sync" />
     </div>
   );
 };
