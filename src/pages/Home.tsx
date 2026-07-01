@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Navigation } from '@/components/Navigation';
 import { ProfileModal } from '@/components/ProfileModal';
+import { LinkDeviceModal } from '@/components/LinkDeviceModal';
 import { isProfileComplete, hasSavedProfile, useLocalProfile } from '@/contexts/LocalProfileContext';
-import { Goal, User } from 'lucide-react';
+import { Goal, Link2, User } from 'lucide-react';
 import { toast } from 'sonner';
 import fieldBackground from '@/assets/field-background.jpg';
 import worldCupTrophy from '@/assets/world_cup.webp';
@@ -12,6 +14,7 @@ import { WorldCountryFlag } from '@/components/WorldCountrySelect';
 const Home = () => {
   const navigate = useNavigate();
   const { profile, showProfileModal, setShowProfileModal } = useLocalProfile();
+  const [showLinkDeviceModal, setShowLinkDeviceModal] = useState(false);
   const hasSavedProfileFlag = hasSavedProfile(profile);
   const profileComplete = isProfileComplete(profile);
   const showProfileCard = hasSavedProfileFlag;
@@ -202,11 +205,22 @@ const Home = () => {
                 </div>
               </button>
             )}
+
+            <Button
+              type="button"
+              variant="ghost"
+              className="gap-2 text-sm text-white/75 hover:text-amber-200 hover:bg-white/5"
+              onClick={() => setShowLinkDeviceModal(true)}
+            >
+              <Link2 className="h-4 w-4" aria-hidden />
+              Link Device
+            </Button>
           </div>
         </div>
       </div>
 
       <ProfileModal open={showProfileModal} onOpenChange={setShowProfileModal} />
+      <LinkDeviceModal open={showLinkDeviceModal} onOpenChange={setShowLinkDeviceModal} />
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react';
 import { Category } from '@/types/game';
 import {
   readGameStatsFromStorage,
@@ -20,6 +20,8 @@ import {
   purgeGuestLeaderboardRowsFromSupabase,
 } from '@/lib/leaderboard';
 import { clearFastestTimerRun, readFastestTimerRunSec } from '@/lib/fastestTimerRun';
+import { applyCloudPayloadToLocalStorage, buildLocalCloudPayload } from '@/lib/cloudProfileSync';
+import { getSharedProfileId, syncLocalWithSharedProfile } from '@/lib/deviceLinkSync';
 import {
   AUTO_GUEST_PROFILE,
   GUEST_PROFILE_COUNTRY,
@@ -67,6 +69,8 @@ interface LocalProfileContextType {
   recentCompletions: RecentCompletion[];
   refreshRecentCompletionsFromStorage: () => void;
   recordGameCompletion: (entry: Omit<RecentCompletion, 'id' | 'at'>) => void;
+  /** Re-read profile + stats from localStorage (e.g. after device link). */
+  hydrateFromLocalStorage: () => void;
 }
 
 const LocalProfileContext = createContext<LocalProfileContextType | undefined>(undefined);
@@ -260,6 +264,72 @@ export const LocalProfileProvider = ({ children }: { children: ReactNode }) => {
     setRecentCompletions(readRecentCompletions());
   }, []);
 
+  const hydrateFromLocalStorage = useCallback(() => {
+    setProfile(hydrateProfileFromStorage());
+    refreshGameStatsFromStorage();
+    refreshRecentCompletionsFromStorage();
+  }, [refreshGameStatsFromStorage, refreshRecentCompletionsFromStorage]);
+
+  // Push local changes to linked shared profile (debounced).
+  useEffect(() => {
+    const profileId = getSharedProfileId();
+    if (!profileId) return;
+
+    const timer = window.setTimeout(() => {
+      const local = buildLocalCloudPayload(profile, gameStats, recentCompletions);
+      void syncLocalWithSharedProfile(profileId, local);
+    }, 2000);
+
+    return () => window.clearTimeout(timer);
+  }, [profile, gameStats, recentCompletions]);
+
+  const profileRef = useRef(profile);
+  const gameStatsRef = useRef(gameStats);
+  const recentCompletionsRef = useRef(recentCompletions);
+  profileRef.current = profile;
+  gameStatsRef.current = gameStats;
+  recentCompletionsRef.current = recentCompletions;
+
+  // Pull + merge shared profile when linked (mount + tab focus only).
+  useEffect(() => {
+    const profileId = getSharedProfileId();
+    if (!profileId) return;
+
+    let cancelled = false;
+
+    const pull = async () => {
+      const local = buildLocalCloudPayload(
+        profileRef.current,
+        gameStatsRef.current,
+        recentCompletionsRef.current,
+      );
+      const merged = await syncLocalWithSharedProfile(profileId, local);
+      if (cancelled || !merged) return;
+
+      applyCloudPayloadToLocalStorage(merged);
+      setProfile(hydrateProfileFromStorage());
+      setGameStats(readGameStatsFromStorage());
+      setRecentCompletions(readRecentCompletions());
+    };
+
+    void pull();
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        void pull();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+  }, []);
+
   // Same-tab: games write to localStorage; re-read when tab becomes visible again.
   useEffect(() => {
     const sync = () => {
@@ -435,6 +505,7 @@ export const LocalProfileProvider = ({ children }: { children: ReactNode }) => {
         recentCompletions,
         refreshRecentCompletionsFromStorage,
         recordGameCompletion,
+        hydrateFromLocalStorage,
       }}
     >
       {children}

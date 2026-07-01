@@ -167,6 +167,80 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_profiles: {
+        Row: {
+          id: string
+          display_name: string
+          country: string
+          gender: string | null
+          age: number | null
+          game_stats: Json
+          recent_completions: Json
+          fastest_timer_run_sec: number | null
+          fastest_timer_by_category: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          display_name: string
+          country: string
+          gender?: string | null
+          age?: number | null
+          game_stats?: Json
+          recent_completions?: Json
+          fastest_timer_run_sec?: number | null
+          fastest_timer_by_category?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          display_name?: string
+          country?: string
+          gender?: string | null
+          age?: number | null
+          game_stats?: Json
+          recent_completions?: Json
+          fastest_timer_run_sec?: number | null
+          fastest_timer_by_category?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      device_link_codes: {
+        Row: {
+          code: string
+          profile_id: string
+          expires_at: string
+          redeemed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          code: string
+          profile_id: string
+          expires_at: string
+          redeemed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          code?: string
+          profile_id?: string
+          expires_at?: string
+          redeemed_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_link_codes_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "shared_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

@@ -26,8 +26,10 @@ import {
   Loader2,
   Sparkles,
   Clock,
+  Link2,
 } from 'lucide-react';
 import { hasSavedProfile, useLocalProfile } from '@/contexts/LocalProfileContext';
+import { LinkDeviceModal } from '@/components/LinkDeviceModal';
 import { REQUIRE_PROFILE_TO_PLAY } from '@/constants/profileGate';
 import { CATEGORIES_PAGE_DISPLAY_ITEMS } from '@/lib/categoryNavigation';
 import { cn } from '@/lib/utils';
@@ -72,6 +74,7 @@ const Profile = () => {
     profile,
   } = useLocalProfile();
   const [openCategories, setOpenCategories] = useState<Set<string>>(() => new Set());
+  const [showLinkDeviceModal, setShowLinkDeviceModal] = useState(false);
 
   const totalStats = getTotalStats();
   const coins = Math.max(0, Math.floor(totalStats.totalScore / 10));
@@ -235,7 +238,16 @@ const Profile = () => {
                 Your scores, coins, and progress on this device.
               </p>
             </div>
-            <div className="w-10 shrink-0" aria-hidden />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowLinkDeviceModal(true)}
+              className="border-border hover:bg-muted shrink-0"
+              aria-label="Link device"
+              title="Link device"
+            >
+              <Link2 className="h-4 w-4" />
+            </Button>
           </div>
 
           <Card className="p-6 md:p-8 mb-8 shadow-card border-border/80 rounded-2xl bg-card/60 backdrop-blur-sm">
@@ -594,6 +606,7 @@ const Profile = () => {
           </div>
         </div>
       </div>
+      <LinkDeviceModal open={showLinkDeviceModal} onOpenChange={setShowLinkDeviceModal} />
     </div>
   );
 };
